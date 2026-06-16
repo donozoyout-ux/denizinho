@@ -46,6 +46,7 @@ export function TaskFormModal({
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setForm({
       title: initialData?.title || "",
       description: initialData?.description || "",
