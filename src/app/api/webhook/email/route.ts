@@ -1,0 +1,104 @@
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { unwrapN8nResponse } from "@/lib/import/local-parser";
+import { parseTasksFromText } from "@/lib/import/local-parser";
+import { sendTaskAssignmentEmail } from "@/lib/email/send-notification";
+
+function verifyWebhookKey(request: Request): boolean {
+  const apiKey = request.headers.get("x-api-key");
+  const expectedKey = process.env.INCOMING_WEBHOOK_API_KEY;
+  if (!expectedKey) return true;
+  return apiKey === expectedKey;
+}
+
+export async function POST(request: Request) {
+  if (!verifyWebhookKey(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const admin = createAdminClient();
+  const supabase = admin ?? (await createClient());
+
+  const subject = body.subject || body.konu || null;
+  const emailBody = body.body || body.text || body.content || body.message || null;
+  const senderEmail = body.sender_email || body.from || body.sender || null;
+
+  let tasks = body.tasks ? unwrapN8nResponse(body.tasks) : [];
+  if (tasks.length === 0 && emailBody) {
+    tasks = parseTasksFromText(emailBody);
+  }
+  if (tasks.length === 0 && body.gorevler) {
+    tasks = unwrapN8nResponse(body.gorevler);
+  }
+
+  const autoCreate = body.auto_create_tasks !== false && tasks.length > 0;
+
+  if (autoCreate) {
+    const { data: allUsers } = await supabase.from("users").select("id, email");
+    const emailToId = new Map(
+      (allUsers ?? []).map((u) => [u.email.toLowerCase(), u.id])
+    );
+
+    const patron = (allUsers ?? []).find((u) => u.email) ?? null;
+    const createdBy = patron?.id ?? null;
+
+    const tasksToInsert = tasks.map((item) => ({
+      title: item.gorev_adi,
+      description: item.aciklama || emailBody?.slice(0, 500) || null,
+      assigned_to: item.ilgili_eposta
+        ? emailToId.get(item.ilgili_eposta.toLowerCase()) ?? null
+        : senderEmail
+          ? emailToId.get(senderEmail.toLowerCase()) ?? null
+          : null,
+      status: "todo" as const,
+      created_by: createdBy,
+    }));
+
+    const { data: inserted, error } = await supabase
+      .from("tasks")
+      .insert(tasksToInsert)
+      .select("*, assignee:users!tasks_assigned_to_fkey(id, email, full_name, telegram_chat_id)");
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    for (const task of inserted ?? []) {
+      if (task.assignee?.email) {
+        await sendTaskAssignmentEmail({
+          to: task.assignee.email,
+          taskTitle: task.title,
+          taskDescription: task.description,
+          assignedBy: "E-posta taraması",
+          telegramChatId: task.assignee.telegram_chat_id,
+        });
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      mode: "auto_tasks",
+      count: inserted?.length ?? 0,
+      tasks: inserted,
+    });
+  }
+
+  const { data, error } = await supabase
+    .from("incoming_requests")
+    .insert({
+      subject,
+      body: emailBody,
+      sender_email: senderEmail,
+      status: "pending",
+    })
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true, mode: "draft", request: data });
+}

@@ -1,0 +1,8 @@
+[build]
+  publish = "."
+
+# Optional redirects can be added here
+# [[redirects]]
+#   from = "/*"
+#   to = "/index.html"
+#   status = 200
