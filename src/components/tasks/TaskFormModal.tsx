@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Task, TaskStatus, User, Project } from "@/types/database";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -44,6 +44,17 @@ export function TaskFormModal({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setForm({
+      title: initialData?.title || "",
+      description: initialData?.description || "",
+      assigned_to: initialData?.assigned_to || "",
+      status: initialData?.status || "todo",
+      due_date: initialData?.due_date || "",
+      project_id: initialData?.project_id || "",
+    });
+  }, [initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

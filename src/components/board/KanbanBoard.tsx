@@ -89,6 +89,44 @@ export function KanbanBoard({
     return res.json();
   };
 
+  const handleReassign = async (taskId: string, newAssigneeId: string) => {
+    const member = teamMembers.find((m) => m.id === newAssigneeId);
+    // Optimistic update
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId
+          ? { ...t, assigned_to: newAssigneeId, assignee: member || t.assignee }
+          : t
+      )
+    );
+
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assigned_to: newAssigneeId }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Atama başarısız");
+      }
+
+      const updated = await res.json();
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? updated : t))
+      );
+    } catch {
+      // Revert optimistic update
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId
+            ? { ...t, assigned_to: tasks.find((x) => x.id === taskId)?.assigned_to || null }
+            : t
+        )
+      );
+    }
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     const task = tasks.find((t) => t.id === event.active.id);
     if (task) setActiveTask(task);
@@ -207,7 +245,9 @@ export function KanbanBoard({
               tasks={getTasksByStatus(status)}
               userRole={userRole}
               currentUserId={currentUserId}
+              teamMembers={teamMembers}
               onEditTask={userRole === "patron" ? setEditingTask : undefined}
+              onReassign={userRole === "patron" ? handleReassign : undefined}
             />
           ))}
         </div>

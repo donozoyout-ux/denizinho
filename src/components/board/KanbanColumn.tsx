@@ -1,7 +1,7 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
-import type { Task, TaskStatus, UserRole } from "@/types/database";
+import type { Task, TaskStatus, User, UserRole } from "@/types/database";
 import { TASK_STATUS_LABELS } from "@/types/database";
 import { TaskCard } from "./TaskCard";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,9 @@ interface KanbanColumnProps {
   tasks: Task[];
   userRole: UserRole;
   currentUserId: string;
+  teamMembers?: User[];
   onEditTask?: (task: Task) => void;
+  onReassign?: (taskId: string, newAssigneeId: string) => void;
 }
 
 export function KanbanColumn({
@@ -25,7 +27,9 @@ export function KanbanColumn({
   tasks,
   userRole,
   currentUserId,
+  teamMembers = [],
   onEditTask,
+  onReassign,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
@@ -55,7 +59,9 @@ export function KanbanColumn({
             task={task}
             userRole={userRole}
             currentUserId={currentUserId}
+            teamMembers={teamMembers}
             onEdit={onEditTask}
+            onReassign={onReassign}
           />
         ))}
         {tasks.length === 0 && (
