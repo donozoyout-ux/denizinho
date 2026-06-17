@@ -26,15 +26,12 @@ export function NotificationBell() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [invitations, setInvitations] = useState<PendingInvitation[]>([]);
-  const [loading, setLoading] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchInvitations();
-    // Poll every 30 seconds for new invitations
-    const interval = setInterval(fetchInvitations, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -59,14 +56,26 @@ export function NotificationBell() {
     }
   };
 
+  const handleToggle = () => {
+    const nextOpen = !open;
+    setOpen(nextOpen);
+    setActionError("");
+    if (nextOpen) {
+      fetchInvitations();
+    }
+  };
+
   const handleAction = async (invitationId: string, action: "accept" | "reject") => {
     setProcessingId(invitationId);
+    setActionError("");
     try {
       const res = await fetch("/api/invitations", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invitationId, action }),
       });
+
+      const data = await res.json();
 
       if (res.ok) {
         if (action === "accept") {
@@ -77,9 +86,12 @@ export function NotificationBell() {
         } else {
           setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
         }
+      } else {
+        setActionError(data.error || "Davet işlemi başarısız oldu");
       }
     } catch (err) {
       console.error("Davet işlemi başarısız", err);
+      setActionError("Bağlantı hatası. Lütfen tekrar deneyin.");
     } finally {
       setProcessingId(null);
     }
@@ -88,7 +100,8 @@ export function NotificationBell() {
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={handleToggle}
+        aria-label="Davetler"
         className={cn(
           "relative flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white transition-all hover:bg-gray-50",
           open && "border-tider-green ring-2 ring-tider-green/10"
@@ -105,7 +118,7 @@ export function NotificationBell() {
       {open && (
         <div className="absolute right-0 mt-2 w-80 rounded-2xl border border-gray-150 bg-white p-4 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="mb-3 flex items-center justify-between border-b border-gray-50 pb-2">
-            <h3 className="font-semibold text-gray-800 text-sm">Gelen Davetiyeler</h3>
+            <h3 className="font-semibold text-gray-800 text-sm">Davetler</h3>
             {invitations.length > 0 && (
               <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600">
                 {invitations.length} Yeni
@@ -113,9 +126,15 @@ export function NotificationBell() {
             )}
           </div>
 
+          {actionError && (
+            <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
+              {actionError}
+            </p>
+          )}
+
           {invitations.length === 0 ? (
             <div className="py-6 text-center text-xs text-gray-400">
-              Yeni davetiyeniz bulunmuyor.
+              Yeni davetiniz bulunmuyor.
             </div>
           ) : (
             <div className="max-h-64 overflow-y-auto space-y-3 pr-1">

@@ -29,6 +29,7 @@ export default function GroupSetupPage() {
   const [invitations, setInvitations] = useState<PendingInvitation[]>([]);
   const [loadingInvitations, setLoadingInvitations] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState("");
 
   useEffect(() => {
     fetchInvitations();
@@ -78,12 +79,15 @@ export default function GroupSetupPage() {
 
   const handleInvitation = async (invitationId: string, action: "accept" | "reject") => {
     setProcessingId(invitationId);
+    setActionError("");
     try {
       const res = await fetch("/api/invitations", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invitationId, action }),
       });
+
+      const data = await res.json();
 
       if (res.ok) {
         if (action === "accept") {
@@ -92,9 +96,11 @@ export default function GroupSetupPage() {
         } else {
           setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
         }
+      } else {
+        setActionError(data.error || "Davet işlemi başarısız oldu");
       }
     } catch {
-      console.error("İşlem başarısız");
+      setActionError("Bağlantı hatası. Lütfen tekrar deneyin.");
     } finally {
       setProcessingId(null);
     }
@@ -117,6 +123,11 @@ export default function GroupSetupPage() {
         </div>
 
         {/* Gelen Davetler */}
+        {actionError && (
+          <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+            {actionError}
+          </p>
+        )}
         {loadingInvitations ? (
           <div className="flex items-center justify-center py-6">
             <Loader2 className="h-5 w-5 animate-spin text-gray-400" />

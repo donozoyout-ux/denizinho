@@ -7,7 +7,7 @@ import { IncomingRequestsList } from "@/components/dashboard/IncomingRequestsLis
 import { RecentTasksList } from "@/components/dashboard/RecentTasksList";
 import type { IncomingRequest, Task } from "@/types/database";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -16,39 +16,56 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Kullanıcının grubu yoksa group-setup'a yönlendir
   if (!user.group_id) {
     redirect("/group-setup");
   }
 
   const supabase = await createClient();
 
-  // Herkes kendi grubunun görevlerini görür (RLS group_id bazlı filtreleyecek)
-  const tasksPromise = supabase
-    .from("tasks")
-    .select("*, assignee:users!tasks_assigned_to_fkey(id, email, full_name, role)", { count: "exact" })
-    .order("created_at", { ascending: false });
+  const taskSelect =
+    "id, title, description, status, due_date, assigned_to, created_at, created_by, updated_at, assignee:users!tasks_assigned_to_fkey(id, email, full_name, role)";
 
-  const requestsPromise = supabase
-    .from("incoming_requests")
-    .select("*", { count: "exact" })
-    .eq("status", "pending")
-    .order("created_at", { ascending: false });
-
-  // Parallel fetch to optimize page speed
-  const [tasksRes, requestsRes] = await Promise.all([
-    tasksPromise,
-    requestsPromise,
+  const [
+    recentTasksRes,
+    totalTasksRes,
+    todoRes,
+    inProgressRes,
+    doneRes,
+    requestsRes,
+  ] = await Promise.all([
+    supabase
+      .from("tasks")
+      .select(taskSelect)
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase.from("tasks").select("*", { count: "exact", head: true }),
+    supabase
+      .from("tasks")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "todo"),
+    supabase
+      .from("tasks")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "in_progress"),
+    supabase
+      .from("tasks")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "done"),
+    supabase
+      .from("incoming_requests")
+      .select("*", { count: "exact" })
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(10),
   ]);
 
-  const tasks = tasksRes.data;
-  const totalTasks = tasksRes.count;
+  const queryError =
+    recentTasksRes.error?.message ||
+    totalTasksRes.error?.message ||
+    requestsRes.error?.message;
 
-  const todoCount = tasks?.filter((t) => t.status === "todo").length ?? 0;
-  const inProgressCount =
-    tasks?.filter((t) => t.status === "in_progress").length ?? 0;
-  const doneCount = tasks?.filter((t) => t.status === "done").length ?? 0;
-
+  const recentTasks = (recentTasksRes.data as unknown as Task[]) ?? [];
+  const totalTasks = totalTasksRes.count ?? 0;
   const incomingRequests = (requestsRes.data as IncomingRequest[]) ?? [];
   const pendingRequests = requestsRes.count ?? 0;
 
@@ -59,11 +76,17 @@ export default async function DashboardPage() {
         description="Görev yönetim panelinize genel bakış"
       />
 
+      {queryError && (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Veriler yüklenirken bir hata oluştu: {queryError}
+        </div>
+      )}
+
       <StatsCards
-        totalTasks={totalTasks ?? 0}
-        todoCount={todoCount}
-        inProgressCount={inProgressCount}
-        doneCount={doneCount}
+        totalTasks={totalTasks}
+        todoCount={todoRes.count ?? 0}
+        inProgressCount={inProgressRes.count ?? 0}
+        doneCount={doneRes.count ?? 0}
         pendingRequests={pendingRequests}
       />
 
@@ -72,7 +95,7 @@ export default async function DashboardPage() {
           title="Son Görevler"
           description="Ekibinizin üzerinde çalıştığı güncel görevler"
         />
-        <RecentTasksList tasks={(tasks as Task[]) ?? []} />
+        <RecentTasksList tasks={recentTasks} totalCount={totalTasks} />
       </section>
 
       <section className="mt-10">
@@ -80,7 +103,7 @@ export default async function DashboardPage() {
           title="Gelen Talepler / E-posta Taslakları"
           description="Gelen istekleri resmi görevlere dönüştürün"
         />
-        <IncomingRequestsList requests={incomingRequests ?? []} />
+        <IncomingRequestsList requests={incomingRequests} />
       </section>
     </div>
   );

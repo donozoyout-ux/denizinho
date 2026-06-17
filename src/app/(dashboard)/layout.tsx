@@ -5,7 +5,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 import { NotificationBell } from "@/components/layout/NotificationBell";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function DashboardLayout({
   children,

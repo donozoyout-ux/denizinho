@@ -5,7 +5,7 @@ import { KanbanBoard } from "@/components/board/KanbanBoard";
 import type { Task, User, Project } from "@/types/database";
 import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function BoardPage() {
   const user = await getCurrentUser();
@@ -18,27 +18,29 @@ export default async function BoardPage() {
 
   const supabase = await createClient();
 
-  // 1. Task query
   const tasksQuery = supabase
     .from("tasks")
-    .select("*, assignee:users!tasks_assigned_to_fkey(id, email, full_name, role), creator:users!tasks_created_by_fkey(id, email, full_name)")
-    .order("created_at", { ascending: false });
+    .select(
+      "*, assignee:users!tasks_assigned_to_fkey(id, email, full_name, role), creator:users!tasks_created_by_fkey(id, email, full_name)"
+    )
+    .order("created_at", { ascending: false })
+    .limit(100);
 
-  // 2. Team members query based on group
   const membersQuery = supabase
     .from("users")
-    .select("*")
+    .select("id, email, full_name, role, group_id, created_at")
     .eq("group_id", user.group_id)
     .order("full_name");
 
-  // 3. Projects query
-  const projectsQuery = supabase.from("projects").select("*").order("title");
+  const projectsQuery = supabase
+    .from("projects")
+    .select("id, title, description, status, created_by, created_at, updated_at, group_id")
+    .order("title");
 
-  // Fetch all parallelly to reduce latency
   const [tasksRes, teamMembersRes, projectsRes] = await Promise.all([
     tasksQuery,
     membersQuery,
-    projectsQuery
+    projectsQuery,
   ]);
 
   return (

@@ -52,8 +52,9 @@ export function InviteMemberForm({ onInvited }: InviteMemberFormProps) {
         <h3 className="text-lg font-semibold text-gray-900">Üye Davet Et</h3>
       </div>
       <p className="mb-4 text-sm text-gray-500">
-        Davet ettiğiniz kişi sisteme giriş yaptığında, ana sayfasında davetinizi görecek.
-        Kabul ederse grubunuza otomatik olarak dahil olur.
+        Davet ettiğiniz kişi sisteme giriş yaptığında, üst bardaki bildirimler
+        simgesinden davetinizi görecek. Kabul ederse grubunuza otomatik olarak
+        dahil olur. E-posta gönderilmez.
       </p>
       <form onSubmit={handleInvite} className="grid gap-4 sm:grid-cols-2">
         <Input

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth";
@@ -52,10 +53,15 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
-  const supabase = admin || (await createClient());
+  if (!admin) {
+    return NextResponse.json(
+      { error: "Sunucu yapılandırması eksik (SUPABASE_SERVICE_ROLE_KEY)" },
+      { status: 503 }
+    );
+  }
 
   // 1. Grup oluştur
-  const { data: group, error: groupError } = await supabase
+  const { data: group, error: groupError } = await admin
     .from("groups")
     .insert({ name: name.trim(), owner_id: user.id })
     .select()
@@ -65,15 +71,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: groupError.message }, { status: 500 });
   }
 
-  // 2. Kullanıcının group_id'sini güncelle
-  const { error: updateError } = await supabase
+  // 2. Kullanıcının group_id'sini güncelle ve doğrula
+  const { data: updatedUser, error: updateError } = await admin
     .from("users")
     .update({ group_id: group.id })
-    .eq("id", user.id);
+    .eq("id", user.id)
+    .select("id, group_id")
+    .single();
 
-  if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+  if (updateError || !updatedUser?.group_id) {
+    return NextResponse.json(
+      { error: updateError?.message || "Gruba katılım başarısız" },
+      { status: 500 }
+    );
   }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/group-setup");
+  revalidatePath("/team");
 
   return NextResponse.json(group, { status: 201 });
 }

@@ -9,9 +9,10 @@ import Link from "next/link";
 
 interface RecentTasksListProps {
   tasks: Task[];
+  totalCount?: number;
 }
 
-export function RecentTasksList({ tasks }: RecentTasksListProps) {
+export function RecentTasksList({ tasks, totalCount }: RecentTasksListProps) {
   if (tasks.length === 0) {
     return (
       <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm">
@@ -26,8 +27,9 @@ export function RecentTasksList({ tasks }: RecentTasksListProps) {
     );
   }
 
-  // Get top 5 recent tasks
-  const recentTasks = tasks.slice(0, 5);
+  // Tasks are already limited server-side; show link when more exist
+  const recentTasks = tasks;
+  const showMoreLink = (totalCount ?? tasks.length) > 5;
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
@@ -79,13 +81,13 @@ export function RecentTasksList({ tasks }: RecentTasksListProps) {
           </div>
         ))}
       </div>
-      {tasks.length > 5 && (
+      {showMoreLink && (
         <div className="border-t border-gray-50 bg-slate-50/30 p-3 text-center">
           <Link
             href="/board"
             className="text-xs font-semibold text-tider-green hover:underline"
           >
-            Tüm Görevleri Gör ({tasks.length})
+            Tüm Görevleri Gör ({totalCount ?? tasks.length})
           </Link>
         </div>
       )}

@@ -1,8 +1,29 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth";
 import { sendInviteEmail } from "@/lib/email/send-notification";
+
+function getUserEmails(userEmail: string, authEmail?: string | null): string[] {
+  const emails = new Set<string>();
+  if (userEmail) emails.add(userEmail.toLowerCase());
+  if (authEmail) emails.add(authEmail.toLowerCase());
+  return Array.from(emails);
+}
+
+function requireAdminClient() {
+  const admin = createAdminClient();
+  if (!admin) {
+    return {
+      error: NextResponse.json(
+        { error: "Sunucu yapılandırması eksik (SUPABASE_SERVICE_ROLE_KEY)" },
+        { status: 503 }
+      ),
+    };
+  }
+  return { admin };
+}
 
 // GET: Kullanıcıya gelen davetleri listele
 export async function GET() {
@@ -11,13 +32,25 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const admin = createAdminClient();
-  const supabase = admin || (await createClient());
+  const supabaseAuth = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabaseAuth.auth.getUser();
 
-  const { data, error } = await supabase
+  const emails = getUserEmails(user.email, authUser?.email);
+  if (emails.length === 0) {
+    return NextResponse.json([]);
+  }
+
+  const { admin, error: adminError } = requireAdminClient();
+  if (adminError) return adminError;
+
+  const { data, error } = await admin!
     .from("invitations")
-    .select("*, group:groups(id, name, owner_id), inviter:users!invitations_inviter_id_fkey(id, full_name, email)")
-    .eq("email", user.email.toLowerCase())
+    .select(
+      "*, group:groups(id, name, owner_id), inviter:users!invitations_inviter_id_fkey(id, full_name, email)"
+    )
+    .in("email", emails)
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 
@@ -54,11 +87,11 @@ export async function POST(request: Request) {
 
   const normalizedEmail = email.trim().toLowerCase();
 
-  const admin = createAdminClient();
-  const supabase = admin || (await createClient());
+  const { admin, error: adminError } = requireAdminClient();
+  if (adminError) return adminError;
 
   // Zaten grupta mı kontrol et
-  const { data: existingUser } = await supabase
+  const { data: existingUser } = await admin!
     .from("users")
     .select("id, group_id")
     .eq("email", normalizedEmail)
@@ -72,7 +105,7 @@ export async function POST(request: Request) {
   }
 
   // Zaten bekleyen davet var mı?
-  const { data: existingInvite } = await supabase
+  const { data: existingInvite } = await admin!
     .from("invitations")
     .select("id")
     .eq("group_id", user.group_id)
@@ -88,7 +121,7 @@ export async function POST(request: Request) {
   }
 
   // Davet oluştur
-  const { data: invitation, error: invError } = await supabase
+  const { data: invitation, error: invError } = await admin!
     .from("invitations")
     .insert({
       group_id: user.group_id,
@@ -103,21 +136,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: invError.message }, { status: 500 });
   }
 
-  // E-posta gönder
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  try {
-    await sendInviteEmail({
-      to: normalizedEmail,
-      fullName: fullName || normalizedEmail,
-      invitedBy: user.full_name || user.email,
-      signupUrl: `${appUrl}/login`,
-    });
-  } catch (emailErr) {
-    console.error("[Invitations] E-posta gönderilemedi:", emailErr);
+  // E-posta yalnızca SEND_INVITE_EMAIL=true ise gönderilir (varsayılan: site-içi davet)
+  if (process.env.SEND_INVITE_EMAIL === "true") {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    try {
+      await sendInviteEmail({
+        to: normalizedEmail,
+        fullName: fullName || normalizedEmail,
+        invitedBy: user.full_name || user.email,
+        signupUrl: `${appUrl}/login`,
+      });
+    } catch (emailErr) {
+      console.error("[Invitations] E-posta gönderilemedi:", emailErr);
+    }
   }
 
   return NextResponse.json(
-    { message: "Davet başarıyla gönderildi", invitation },
+    {
+      message:
+        "Davet gönderildi. Kullanıcı giriş yaptığında üst bardaki bildirimlerden görecek.",
+      invitation,
+    },
     { status: 201 }
   );
 }
@@ -139,15 +178,21 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Geçersiz istek" }, { status: 400 });
   }
 
-  const admin = createAdminClient();
-  const supabase = admin || (await createClient());
+  const supabaseAuth = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabaseAuth.auth.getUser();
+  const emails = getUserEmails(user.email, authUser?.email);
+
+  const { admin, error: adminError } = requireAdminClient();
+  if (adminError) return adminError;
 
   // Daveti bul
-  const { data: invitation, error: findError } = await supabase
+  const { data: invitation, error: findError } = await admin!
     .from("invitations")
     .select("*")
     .eq("id", invitationId)
-    .eq("email", user.email.toLowerCase())
+    .in("email", emails)
     .eq("status", "pending")
     .single();
 
@@ -159,29 +204,48 @@ export async function PATCH(request: Request) {
   }
 
   if (action === "reject") {
-    await supabase
+    const { error: rejectError } = await admin!
       .from("invitations")
       .update({ status: "rejected" })
       .eq("id", invitationId);
 
+    if (rejectError) {
+      return NextResponse.json({ error: rejectError.message }, { status: 500 });
+    }
+
     return NextResponse.json({ message: "Davet reddedildi" });
   }
 
-  // Kabul et: kullanıcının group_id'sini güncelle
-  const { error: updateError } = await supabase
+  // Kabul et: kullanıcının group_id'sini güncelle (admin client ile RLS bypass)
+  const { data: updatedUser, error: updateError } = await admin!
     .from("users")
     .update({ group_id: invitation.group_id })
-    .eq("id", user.id);
+    .eq("id", user.id)
+    .select("id, group_id")
+    .single();
 
-  if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+  if (updateError || !updatedUser?.group_id) {
+    return NextResponse.json(
+      { error: updateError?.message || "Gruba katılım başarısız" },
+      { status: 500 }
+    );
   }
 
-  // Davet durumunu güncelle
-  await supabase
+  const { error: statusError } = await admin!
     .from("invitations")
     .update({ status: "accepted" })
     .eq("id", invitationId);
 
-  return NextResponse.json({ message: "Daveti kabul ettiniz! Artık grubun bir üyesisiniz." });
+  if (statusError) {
+    return NextResponse.json({ error: statusError.message }, { status: 500 });
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/group-setup");
+  revalidatePath("/team");
+  revalidatePath("/board");
+
+  return NextResponse.json({
+    message: "Daveti kabul ettiniz! Artık grubun bir üyesisiniz.",
+  });
 }
