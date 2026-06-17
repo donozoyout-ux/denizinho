@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { GoogleAuthGuide } from "@/components/auth/GoogleAuthGuide";
 import { translateAuthError } from "@/lib/auth-errors";
+import { getAuthCallbackUrl } from "@/lib/app-url";
 
 export function SignupForm() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export function SignupForm() {
       password,
       options: {
         data: { full_name: fullName, role },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: getAuthCallbackUrl(),
       },
     });
 
@@ -56,7 +57,7 @@ export function SignupForm() {
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: getAuthCallbackUrl(),
         queryParams: {
           access_type: "offline",
           prompt: "consent",

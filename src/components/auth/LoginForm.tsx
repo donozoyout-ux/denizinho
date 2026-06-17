@@ -12,6 +12,7 @@ import {
   translateAuthError,
   AUTH_PAGE_ERRORS,
 } from "@/lib/auth-errors";
+import { getAuthCallbackUrl } from "@/lib/app-url";
 
 export function LoginForm() {
   const searchParams = useSearchParams();
@@ -77,7 +78,7 @@ export function LoginForm() {
       type: "signup",
       email: email.trim(),
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: getAuthCallbackUrl(),
       },
     });
 
@@ -96,7 +97,7 @@ export function LoginForm() {
     const { error: authError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: getAuthCallbackUrl(),
         queryParams: {
           access_type: "offline",
           prompt: "consent",
