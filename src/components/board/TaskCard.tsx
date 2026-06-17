@@ -89,9 +89,19 @@ export function TaskCard({
               {task.description}
             </p>
           )}
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-400">
-            {/* Assignee chip with inline reassign dropdown */}
-            <div className="relative">
+          {/* Kişi Bilgileri ve Tarih */}
+          <div className="mt-4 pt-3 border-t border-gray-100 space-y-2 text-xs">
+            {/* Görev Veren (Atayan) */}
+            <div className="flex items-center gap-2 text-gray-500">
+              <span className="font-medium text-gray-400 min-w-[70px]">G. Veren:</span>
+              <span className="font-semibold text-gray-700 truncate">
+                {task.creator?.full_name || task.creator?.email || "Otomatik/Sistem"}
+              </span>
+            </div>
+
+            {/* Görev Alıcı (Atanan) */}
+            <div className="flex items-center gap-2 text-gray-500 relative">
+              <span className="font-medium text-gray-400 min-w-[70px]">G. Alan:</span>
               {isGroupAdmin(user) && teamMembers.length > 0 ? (
                 <button
                   type="button"
@@ -100,22 +110,21 @@ export function TaskCard({
                     setShowAssignDropdown(!showAssignDropdown);
                   }}
                   className={cn(
-                    "flex items-center gap-1 rounded-full px-2 py-0.5 transition-colors",
-                    "hover:bg-tider-green-light hover:text-tider-green",
-                    task.assignee
-                      ? "bg-gray-50 text-gray-500"
-                      : "bg-orange-50 text-orange-500"
+                    "flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors font-semibold",
+                    "hover:bg-tider-green-light hover:text-tider-green-dark",
+                    task.assignee ? "bg-gray-100 text-gray-700" : "bg-orange-50 text-orange-600"
                   )}
                 >
-                  <UserIcon className="h-3 w-3" />
-                  <span className="max-w-[100px] truncate">
+                  <span className="truncate max-w-[150px]">
                     {task.assignee?.full_name || task.assignee?.email || "Atanmadı"}
                   </span>
-                  <ChevronDown className="h-3 w-3 opacity-60" />
+                  <ChevronDown className="h-3.5 w-3.5 opacity-60" />
                 </button>
               ) : (
-                <span className="flex items-center gap-1">
-                  <UserIcon className="h-3 w-3" />
+                <span className={cn(
+                  "font-semibold rounded px-1.5 py-0.5",
+                  task.assignee ? "bg-gray-100 text-gray-700" : "bg-orange-50 text-orange-600"
+                )}>
                   {task.assignee?.full_name || task.assignee?.email || "Atanmadı"}
                 </span>
               )}
@@ -130,7 +139,7 @@ export function TaskCard({
                       setShowAssignDropdown(false);
                     }}
                   />
-                  <div className="absolute left-0 top-full z-50 mt-1 w-52 rounded-xl border border-gray-200 bg-white py-1 shadow-xl animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div className="absolute left-0 bottom-full z-50 mb-1 w-52 rounded-xl border border-gray-200 bg-white py-1 shadow-xl animate-in fade-in slide-in-from-bottom-1 duration-150">
                     <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
                       Atanacak Kişi
                     </p>
@@ -166,12 +175,18 @@ export function TaskCard({
               )}
             </div>
 
-            {task.due_date && (
-              <span className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                {formatDate(task.due_date)}
-              </span>
-            )}
+            {/* Bitiş Tarihi */}
+            <div className="flex items-center gap-2 text-gray-500">
+              <span className="font-medium text-gray-400 min-w-[70px]">Hedef Gün:</span>
+              {task.due_date ? (
+                <span className="flex items-center gap-1 font-semibold text-tider-green-dark bg-tider-green-light/40 px-1.5 py-0.5 rounded">
+                  <Calendar className="h-3 w-3" />
+                  {formatDate(task.due_date)}
+                </span>
+              ) : (
+                <span className="text-gray-400 italic">Belirtilmedi</span>
+              )}
+            </div>
           </div>
         </div>
       </div>

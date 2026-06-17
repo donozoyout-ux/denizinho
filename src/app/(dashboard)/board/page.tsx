@@ -21,7 +21,7 @@ export default async function BoardPage() {
   // 1. Task query
   const tasksQuery = supabase
     .from("tasks")
-    .select("*, assignee:users!tasks_assigned_to_fkey(id, email, full_name, role)")
+    .select("*, assignee:users!tasks_assigned_to_fkey(id, email, full_name, role), creator:users!tasks_created_by_fkey(id, email, full_name)")
     .order("created_at", { ascending: false });
 
   // 2. Team members query based on group

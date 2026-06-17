@@ -20,7 +20,7 @@ export default async function TablePage() {
 
   const { data: tasks } = await supabase
     .from("tasks")
-    .select("*, assignee:users!tasks_assigned_to_fkey(id, email, full_name, role)")
+    .select("*, assignee:users!tasks_assigned_to_fkey(id, email, full_name, role), creator:users!tasks_created_by_fkey(id, email, full_name)")
     .order("created_at", { ascending: false });
 
   return (

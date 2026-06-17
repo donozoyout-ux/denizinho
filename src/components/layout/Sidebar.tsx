@@ -11,21 +11,13 @@ import {
   LogOut,
   Leaf,
   Settings,
+  PlusCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isGroupAdmin } from "@/lib/auth-client";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@/types/database";
 import { RoleBadge } from "@/components/ui/Badge";
-
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/board", label: "Görev Panosu", icon: Kanban },
-  { href: "/table", label: "Tablo Görünümü", icon: Table2 },
-  { href: "/projects", label: "Projeler", icon: Folder },
-  { href: "/team", label: "Ekip Yönetimi", icon: Users },
-  { href: "/settings", label: "Profil & Ayarlar", icon: Settings },
-];
 
 interface SidebarProps {
   user: User;
@@ -41,6 +33,20 @@ export function Sidebar({ user }: SidebarProps) {
     router.push("/login");
     router.refresh();
   };
+
+  const navItems = user.group_id
+    ? [
+        { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/board", label: "Görev Panosu", icon: Kanban },
+        { href: "/table", label: "Tablo Görünümü", icon: Table2 },
+        { href: "/projects", label: "Projeler", icon: Folder },
+        { href: "/team", label: "Ekip Yönetimi", icon: Users },
+        { href: "/settings", label: "Profil & Ayarlar", icon: Settings },
+      ]
+    : [
+        { href: "/group-setup", label: "Grup Oluştur", icon: PlusCircle },
+        { href: "/settings", label: "Profil & Ayarlar", icon: Settings },
+      ];
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-[var(--sidebar-width)] flex-col border-r border-gray-200 bg-white">

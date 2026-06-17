@@ -61,6 +61,7 @@ export interface Task {
   project_id?: string | null;
   assignee?: User | null;
   group_id?: string | null;
+  creator?: User | null;
 }
 
 export interface IncomingRequest {

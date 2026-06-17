@@ -101,7 +101,7 @@ export default function GroupSetupPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-white to-green-50 p-6">
+    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center p-6">
       <div className="w-full max-w-lg space-y-8">
         {/* Logo / Branding */}
         <div className="text-center">

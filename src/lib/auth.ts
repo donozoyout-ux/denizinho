@@ -38,6 +38,26 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
         return userFromAuth(user);
       }
       if (error.code === "PGRST116") {
+        const { createAdminClient } = await import("@/lib/supabase/admin");
+        const admin = createAdminClient();
+        if (admin) {
+          const newUser = {
+            id: user.id,
+            email: user.email || "",
+            full_name: (user.user_metadata?.full_name as string) || user.email?.split("@")[0] || null,
+            role: (user.user_metadata?.role as UserRole) || "team_member",
+          };
+          const { data: inserted, error: insertError } = await admin
+            .from("users")
+            .insert(newUser)
+            .select()
+            .single();
+          if (!insertError && inserted) {
+            return inserted as User;
+          } else {
+            console.error("[auth] failed to auto-insert user to public.users:", insertError?.message);
+          }
+        }
         return userFromAuth(user);
       }
       console.error("[auth] getCurrentUser error:", error.message);
