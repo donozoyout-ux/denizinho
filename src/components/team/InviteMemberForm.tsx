@@ -10,7 +10,6 @@ interface InviteMemberFormProps {
 }
 
 export function InviteMemberForm({ onInvited }: InviteMemberFormProps) {
-  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -23,27 +22,20 @@ export function InviteMemberForm({ onInvited }: InviteMemberFormProps) {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/team", {
+      const res = await fetch("/api/invitations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, fullName }),
+        body: JSON.stringify({ email }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        if (data.fallback) {
-          setError(
-            `${data.error} Alternatif: üyeye /signup linkini gönderin.`
-          );
-        } else {
-          setError(data.error || "Davet gönderilemedi");
-        }
+        setError(data.error || "Davet gönderilemedi");
         return;
       }
 
-      setSuccess(data.message || "Üye eklendi");
-      setFullName("");
+      setSuccess(data.message || "Davet gönderildi!");
       setEmail("");
       onInvited();
     } catch {
@@ -57,20 +49,16 @@ export function InviteMemberForm({ onInvited }: InviteMemberFormProps) {
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-center gap-2">
         <UserPlus className="h-5 w-5 text-tider-green" />
-        <h3 className="text-lg font-semibold text-gray-900">Üye Ekle / Davet Et</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Üye Davet Et</h3>
       </div>
-      <form onSubmit={handleInvite} className="grid gap-4 sm:grid-cols-3">
-        <Input
-          id="inviteName"
-          label="Ad Soyad"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          placeholder="Ayşe Yılmaz"
-          required
-        />
+      <p className="mb-4 text-sm text-gray-500">
+        Davet ettiğiniz kişi sisteme giriş yaptığında, ana sayfasında davetinizi görecek.
+        Kabul ederse grubunuza otomatik olarak dahil olur.
+      </p>
+      <form onSubmit={handleInvite} className="grid gap-4 sm:grid-cols-2">
         <Input
           id="inviteEmail"
-          label="E-posta"
+          label="E-posta Adresi"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}

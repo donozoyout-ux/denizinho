@@ -8,8 +8,8 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const user = await getCurrentUser();
-  if (!user || user.role !== "patron") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!user || !user.group_id) {
+    return NextResponse.json({ error: "Forbidden - Bir gruba üye olmalısınız" }, { status: 403 });
   }
 
   const body = await request.json();

@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { Header } from "@/components/layout/Header";
@@ -9,25 +10,33 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  // Kullanıcının grubu yoksa group-setup'a yönlendir
+  if (!user.group_id) {
+    redirect("/group-setup");
+  }
+
   const supabase = await createClient();
 
-  const taskQuery = supabase.from("tasks").select("*", { count: "exact" });
-  const tasksPromise = user?.role === "patron"
-    ? taskQuery
-    : taskQuery.eq("assigned_to", user!.id);
+  // Herkes kendi grubunun görevlerini görür (RLS group_id bazlı filtreleyecek)
+  const tasksPromise = supabase
+    .from("tasks")
+    .select("*", { count: "exact" });
 
-  const requestsPromise = user?.role === "patron"
-    ? supabase
-        .from("incoming_requests")
-        .select("*", { count: "exact" })
-        .eq("status", "pending")
-        .order("created_at", { ascending: false })
-    : Promise.resolve({ data: [], count: 0 });
+  const requestsPromise = supabase
+    .from("incoming_requests")
+    .select("*", { count: "exact" })
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
 
   // Parallel fetch to optimize page speed
   const [tasksRes, requestsRes] = await Promise.all([
     tasksPromise,
-    requestsPromise
+    requestsPromise,
   ]);
 
   const tasks = tasksRes.data;
@@ -56,15 +65,13 @@ export default async function DashboardPage() {
         pendingRequests={pendingRequests}
       />
 
-      {user?.role === "patron" && (
-        <section className="mt-10">
-          <Header
-            title="Gelen Talepler / E-posta Taslakları"
-            description="Gelen istekleri resmi görevlere dönüştürün"
-          />
-          <IncomingRequestsList requests={incomingRequests ?? []} />
-        </section>
-      )}
+      <section className="mt-10">
+        <Header
+          title="Gelen Talepler / E-posta Taslakları"
+          description="Gelen istekleri resmi görevlere dönüştürün"
+        />
+        <IncomingRequestsList requests={incomingRequests ?? []} />
+      </section>
     </div>
   );
 }

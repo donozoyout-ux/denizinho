@@ -16,7 +16,25 @@ export interface User {
   role: UserRole;
   telegram_chat_id?: string | null;
   created_at: string;
-  invited_by?: string | null;
+  group_id?: string | null;
+}
+
+export interface Group {
+  id: string;
+  name: string;
+  owner_id: string;
+  created_at: string;
+}
+
+export type InvitationStatus = "pending" | "accepted" | "rejected";
+
+export interface Invitation {
+  id: string;
+  group_id: string;
+  email: string;
+  inviter_id: string;
+  status: InvitationStatus;
+  created_at: string;
 }
 
 export interface Project {
@@ -27,6 +45,7 @@ export interface Project {
   created_by: string;
   created_at: string;
   updated_at: string;
+  group_id?: string | null;
 }
 
 export interface Task {
@@ -41,6 +60,7 @@ export interface Task {
   updated_at: string;
   project_id?: string | null;
   assignee?: User | null;
+  group_id?: string | null;
 }
 
 export interface IncomingRequest {
@@ -50,6 +70,7 @@ export interface IncomingRequest {
   sender_email: string | null;
   status: IncomingRequestStatus;
   created_at: string;
+  group_id?: string | null;
 }
 
 export interface N8nExtractedTask {

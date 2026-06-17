@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser, isGroupAdmin } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { sendTaskAssignmentEmail } from "@/lib/email/send-notification";
 
 export async function GET() {
@@ -16,10 +16,7 @@ export async function GET() {
     .select("*, assignee:users!tasks_assigned_to_fkey(id, email, full_name, role, telegram_chat_id)")
     .order("created_at", { ascending: false });
 
-  // Yönetici tüm görevleri görür, üye sadece kendine atananları
-  if (!isGroupAdmin(user)) {
-    query = query.eq("assigned_to", user.id);
-  }
+  // Herkes kendi grubunun tüm görevlerini görür (RLS group_id bazlı filtreleyecek)
 
   const { data, error } = await query;
 
@@ -49,6 +46,7 @@ export async function POST(request: Request) {
       status: body.status || "todo",
       due_date: body.due_date || null,
       created_by: user.id,
+      group_id: user.group_id || null,
     })
     .select("*, assignee:users!tasks_assigned_to_fkey(id, email, full_name, role, telegram_chat_id)")
     .single();

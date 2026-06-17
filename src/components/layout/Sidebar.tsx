@@ -23,7 +23,7 @@ const navItems = [
   { href: "/board", label: "Görev Panosu", icon: Kanban },
   { href: "/table", label: "Tablo Görünümü", icon: Table2 },
   { href: "/projects", label: "Projeler", icon: Folder },
-  { href: "/team", label: "Ekip Yönetimi", icon: Users, patronOnly: true },
+  { href: "/team", label: "Ekip Yönetimi", icon: Users },
   { href: "/settings", label: "Profil & Ayarlar", icon: Settings },
 ];
 
@@ -42,10 +42,6 @@ export function Sidebar({ user }: SidebarProps) {
     router.refresh();
   };
 
-  const filteredNav = navItems.filter(
-    (item) => !item.patronOnly || isGroupAdmin(user)
-  );
-
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-[var(--sidebar-width)] flex-col border-r border-gray-200 bg-white">
       <div className="flex items-center gap-3 border-b border-gray-100 px-6 py-5">
@@ -59,7 +55,7 @@ export function Sidebar({ user }: SidebarProps) {
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-4">
-        {filteredNav.map((item) => {
+        {navItems.map((item) => {
           const isActive =
             pathname === item.href ||
             (item.href !== "/dashboard" && pathname.startsWith(item.href));

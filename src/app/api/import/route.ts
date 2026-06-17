@@ -6,8 +6,8 @@ import { sendTaskAssignmentEmail } from "@/lib/email/send-notification";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
-  if (!user || user.role !== "patron") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!user || !user.group_id) {
+    return NextResponse.json({ error: "Forbidden - Bir gruba üye olmalısınız" }, { status: 403 });
   }
 
   const formData = await request.formData();
@@ -39,7 +39,10 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createClient();
-    const { data: allUsers } = await supabase.from("users").select("id, email");
+    const { data: allUsers } = await supabase
+      .from("users")
+      .select("id, email")
+      .eq("group_id", user.group_id);
     const emailToId = new Map(
       (allUsers ?? []).map((u) => [u.email.toLowerCase(), u.id])
     );
@@ -54,6 +57,7 @@ export async function POST(request: Request) {
           : null,
         status: "todo" as const,
         created_by: user.id,
+        group_id: user.group_id,
       }));
 
     const { data: inserted, error } = await supabase

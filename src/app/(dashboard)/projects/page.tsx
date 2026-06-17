@@ -4,10 +4,19 @@ import { Header } from "@/components/layout/Header";
 import { ProjectsDashboard } from "@/components/projects/ProjectsDashboard";
 import type { User } from "@/types/database";
 
+import { redirect } from "next/navigation";
+
 export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
   const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+  if (!user.group_id) {
+    redirect("/group-setup");
+  }
+
   const supabase = await createClient();
 
   // Parallel database fetches to optimize speed

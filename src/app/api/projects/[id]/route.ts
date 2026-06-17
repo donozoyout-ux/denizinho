@@ -14,10 +14,9 @@ export async function PATCH(
 
   const supabase = await createClient();
 
-  // Proje sahibi veya yönetici düzenleyebilir
   const { data: existing } = await supabase
     .from("projects")
-    .select("created_by")
+    .select("created_by, group_id")
     .eq("id", id)
     .single();
 
@@ -25,7 +24,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  if (!isGroupAdmin(user) && existing.created_by !== user.id) {
+  if (!user.group_id || existing.group_id !== user.group_id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -64,7 +63,7 @@ export async function DELETE(
 
   const { data: existing } = await supabase
     .from("projects")
-    .select("created_by")
+    .select("created_by, group_id")
     .eq("id", id)
     .single();
 
@@ -72,7 +71,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
 
-  if (!isGroupAdmin(user) && existing.created_by !== user.id) {
+  if (!user.group_id || existing.group_id !== user.group_id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

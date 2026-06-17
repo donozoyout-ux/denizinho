@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser, isGroupAdmin } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -38,6 +38,7 @@ export async function POST(request: Request) {
       description: body.description || null,
       status: body.status || "todo",
       created_by: user.id,
+      group_id: user.group_id || null,
     })
     .select()
     .single();

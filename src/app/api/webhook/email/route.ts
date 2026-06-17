@@ -33,17 +33,22 @@ export async function POST(request: Request) {
     tasks = unwrapN8nResponse(body.gorevler);
   }
 
+  const { data: allUsers } = await supabase.from("users").select("id, email, group_id");
+  const emailToId = new Map(
+    (allUsers ?? []).map((u) => [u.email.toLowerCase(), u.id])
+  );
+
+  const senderUser = senderEmail
+    ? (allUsers ?? []).find((u) => u.email?.toLowerCase() === senderEmail.toLowerCase())
+    : null;
+  const targetGroupId =
+    senderUser?.group_id ||
+    (allUsers ?? []).find((u) => u.group_id)?.group_id ||
+    null;
+
   const autoCreate = body.auto_create_tasks !== false && tasks.length > 0;
 
   if (autoCreate) {
-    const { data: allUsers } = await supabase.from("users").select("id, email");
-    const emailToId = new Map(
-      (allUsers ?? []).map((u) => [u.email.toLowerCase(), u.id])
-    );
-
-    const patron = (allUsers ?? []).find((u) => u.email) ?? null;
-    const createdBy = patron?.id ?? null;
-
     const tasksToInsert = tasks.map((item) => ({
       title: item.gorev_adi,
       description: item.aciklama || emailBody?.slice(0, 500) || null,
@@ -53,7 +58,8 @@ export async function POST(request: Request) {
           ? emailToId.get(senderEmail.toLowerCase()) ?? null
           : null,
       status: "todo" as const,
-      created_by: createdBy,
+      created_by: senderUser?.id || (allUsers ?? []).find((u) => u.id)?.id || null,
+      group_id: targetGroupId,
     }));
 
     const { data: inserted, error } = await supabase
@@ -92,6 +98,7 @@ export async function POST(request: Request) {
       body: emailBody,
       sender_email: senderEmail,
       status: "pending",
+      group_id: targetGroupId,
     })
     .select()
     .single();

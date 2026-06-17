@@ -27,23 +27,12 @@ export async function PATCH(
     return NextResponse.json({ error: "Task not found" }, { status: 404 });
   }
 
-  const admin = isGroupAdmin(user);
+  if (!user.group_id) {
+    return NextResponse.json({ error: "Grup üyesi olmalısınız" }, { status: 403 });
+  }
 
-  // Yönetici veya görev oluşturucu her şeyi yapabilir
-  // Normal üye sadece kendine atanan görevin durumunu değiştirebilir
-  if (!admin && existing.created_by !== user.id) {
-    if (existing.assigned_to !== user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-    // Üye sadece kendi görevinin durumunu güncelleyebilir
-    const allowedFields = ["status"];
-    const bodyKeys = Object.keys(body);
-    if (bodyKeys.some((k) => !allowedFields.includes(k))) {
-      return NextResponse.json(
-        { error: "Sadece görev durumunu güncelleyebilirsiniz" },
-        { status: 403 }
-      );
-    }
+  if (existing.group_id !== user.group_id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const updateData: Record<string, unknown> = {};
@@ -95,10 +84,10 @@ export async function DELETE(
 
   const supabase = await createClient();
 
-  // Görevi silen kişi ya yönetici ya da görevin oluşturucusu olmalı
+  // Görevi silen kişi aynı grupta olmalı
   const { data: existing } = await supabase
     .from("tasks")
-    .select("created_by")
+    .select("created_by, group_id")
     .eq("id", id)
     .single();
 
@@ -106,7 +95,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Task not found" }, { status: 404 });
   }
 
-  if (!isGroupAdmin(user) && existing.created_by !== user.id) {
+  if (!user.group_id || existing.group_id !== user.group_id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

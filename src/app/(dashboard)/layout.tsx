@@ -32,6 +32,20 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  // Kullanıcının grubu yoksa group-setup sayfasına yönlendir
+  // (group-setup sayfasının kendisi hariç – sonsuz döngü olmasın)
+  const isGroupSetupPage =
+    typeof globalThis !== "undefined" ? false : false; // layout'ta path bilgisi yok, aşağıdaki children kontrol edilecek
+
+  if (!user.group_id) {
+    // group-setup sayfası zaten açıksa sidebar olmadan göster
+    return (
+      <div className="min-h-screen bg-[var(--background)]">
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <Sidebar user={user} />

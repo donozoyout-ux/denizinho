@@ -9,8 +9,8 @@ export async function POST(
 ) {
   const { id } = await params;
   const user = await getCurrentUser();
-  if (!user || user.role !== "patron") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!user || !user.group_id) {
+    return NextResponse.json({ error: "Forbidden - Bir gruba üye olmalısınız" }, { status: 403 });
   }
 
   const supabase = await createClient();
@@ -46,6 +46,7 @@ export async function POST(
       assigned_to: assignedTo,
       status: "todo",
       created_by: user.id,
+      group_id: user.group_id,
     })
     .select()
     .single();
