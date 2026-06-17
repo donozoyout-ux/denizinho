@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
+import { NotificationBell } from "@/components/layout/NotificationBell";
+
 export const dynamic = "force-dynamic";
 
 export default async function DashboardLayout({
@@ -35,8 +37,21 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <Sidebar user={user} />
-      <main className="ml-[var(--sidebar-width)] min-h-screen p-8">
-        {children}
+      <main className="ml-[var(--sidebar-width)] min-h-screen flex flex-col">
+        {/* Global Top Navbar */}
+        <header className="flex h-16 items-center justify-between border-b border-gray-100 bg-white px-8">
+          <div className="text-sm font-semibold text-gray-700">
+            {user.group_id ? "TIDER Çalışma Alanı" : "Grup Oluşturun veya Davet Kabul Edin"}
+          </div>
+          <div className="flex items-center gap-4">
+            <NotificationBell />
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <div className="flex-1 p-8">
+          {children}
+        </div>
       </main>
     </div>
   );

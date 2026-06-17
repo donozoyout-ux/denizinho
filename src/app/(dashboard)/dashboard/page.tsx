@@ -4,7 +4,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { Header } from "@/components/layout/Header";
 import { StatsCards } from "@/components/dashboard/StatsCards";
 import { IncomingRequestsList } from "@/components/dashboard/IncomingRequestsList";
-import type { IncomingRequest } from "@/types/database";
+import { RecentTasksList } from "@/components/dashboard/RecentTasksList";
+import type { IncomingRequest, Task } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,8 @@ export default async function DashboardPage() {
   // Herkes kendi grubunun görevlerini görür (RLS group_id bazlı filtreleyecek)
   const tasksPromise = supabase
     .from("tasks")
-    .select("*", { count: "exact" });
+    .select("*, assignee:users!tasks_assigned_to_fkey(id, email, full_name, role)", { count: "exact" })
+    .order("created_at", { ascending: false });
 
   const requestsPromise = supabase
     .from("incoming_requests")
@@ -64,6 +66,14 @@ export default async function DashboardPage() {
         doneCount={doneCount}
         pendingRequests={pendingRequests}
       />
+
+      <section className="mt-10">
+        <Header
+          title="Son Görevler"
+          description="Ekibinizin üzerinde çalıştığı güncel görevler"
+        />
+        <RecentTasksList tasks={(tasks as Task[]) ?? []} />
+      </section>
 
       <section className="mt-10">
         <Header

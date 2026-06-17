@@ -49,7 +49,7 @@ DROP POLICY IF EXISTS "Users can read all projects" ON public.projects;
 CREATE POLICY "Users can read group members"
   ON public.users FOR SELECT
   TO authenticated
-  USING (group_id = public.get_current_group_id() OR id = auth.uid());
+  USING (group_id = (SELECT u.group_id FROM public.users u WHERE u.id = auth.uid()) OR id = auth.uid());
 
 CREATE POLICY "Users can update own profile"
   ON public.users FOR UPDATE
@@ -60,28 +60,28 @@ CREATE POLICY "Users can update own profile"
 CREATE POLICY "Group members can manage projects"
   ON public.projects FOR ALL
   TO authenticated
-  USING (group_id = public.get_current_group_id())
-  WITH CHECK (group_id = public.get_current_group_id());
+  USING (group_id = (SELECT u.group_id FROM public.users u WHERE u.id = auth.uid()))
+  WITH CHECK (group_id = (SELECT u.group_id FROM public.users u WHERE u.id = auth.uid()));
 
 -- Tasks: accessible by group members
 CREATE POLICY "Group members can manage tasks"
   ON public.tasks FOR ALL
   TO authenticated
-  USING (group_id = public.get_current_group_id())
-  WITH CHECK (group_id = public.get_current_group_id());
+  USING (group_id = (SELECT u.group_id FROM public.users u WHERE u.id = auth.uid()))
+  WITH CHECK (group_id = (SELECT u.group_id FROM public.users u WHERE u.id = auth.uid()));
 
 -- Incoming Requests: accessible by group members
 CREATE POLICY "Group members can manage incoming requests"
   ON public.incoming_requests FOR ALL
   TO authenticated
-  USING (group_id = public.get_current_group_id())
-  WITH CHECK (group_id = public.get_current_group_id());
+  USING (group_id = (SELECT u.group_id FROM public.users u WHERE u.id = auth.uid()))
+  WITH CHECK (group_id = (SELECT u.group_id FROM public.users u WHERE u.id = auth.uid()));
 
--- Groups: Members can view, Owner can update/delete
+-- Groups: Any authenticated user can view (to allow foreign key constraint checking), Owner can update/delete
 CREATE POLICY "Members can view their group"
   ON public.groups FOR SELECT
   TO authenticated
-  USING (id = public.get_current_group_id());
+  USING (true);
 
 CREATE POLICY "Users can create groups"
   ON public.groups FOR INSERT
@@ -97,17 +97,17 @@ CREATE POLICY "Owner can manage group"
 CREATE POLICY "Inviter and invitee can view invitations"
   ON public.invitations FOR SELECT
   TO authenticated
-  USING (inviter_id = auth.uid() OR email = (SELECT email FROM public.users WHERE id = auth.uid()));
+  USING (inviter_id = auth.uid() OR lower(email) = lower(auth.jwt() ->> 'email'));
 
 CREATE POLICY "Members can create invitations"
   ON public.invitations FOR INSERT
   TO authenticated
-  WITH CHECK (group_id = public.get_current_group_id());
+  WITH CHECK (group_id = (SELECT u.group_id FROM public.users u WHERE u.id = auth.uid()));
 
 CREATE POLICY "Invitee can update invitation"
   ON public.invitations FOR UPDATE
   TO authenticated
-  USING (email = (SELECT email FROM public.users WHERE id = auth.uid()));
+  USING (lower(email) = lower(auth.jwt() ->> 'email'));
 
 -- 8. Update handle_new_user trigger (removed invited_by)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -124,3 +124,11 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 9. Performance Optimization Indexes
+CREATE INDEX IF NOT EXISTS users_group_id_idx ON public.users(group_id);
+CREATE INDEX IF NOT EXISTS projects_group_id_idx ON public.projects(group_id);
+CREATE INDEX IF NOT EXISTS tasks_group_id_idx ON public.tasks(group_id);
+CREATE INDEX IF NOT EXISTS incoming_requests_group_id_idx ON public.incoming_requests(group_id);
+CREATE INDEX IF NOT EXISTS invitations_group_id_idx ON public.invitations(group_id);
+CREATE INDEX IF NOT EXISTS invitations_email_idx ON public.invitations(lower(email));
