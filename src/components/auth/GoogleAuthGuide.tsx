@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { APP_NAME } from "@/lib/config";
 
 export function GoogleAuthGuide() {
   const [open, setOpen] = useState(false);
@@ -62,17 +63,22 @@ export function GoogleAuthGuide() {
             </li>
             <li>Google&apos;ı etkinleştirin, Client ID ve Secret yapıştırın</li>
             <li>
-              URL Configuration&apos;da şunları ekleyin:
+              URL Configuration&apos;da kullandığınız alan adlarını ekleyin:
               <code className="mt-1 block rounded bg-white px-2 py-1 text-[11px]">
                 http://localhost:3000/auth/callback
+              </code>
+              <code className="mt-1 block rounded bg-white px-2 py-1 text-[11px] break-all">
+                https://ekipplan-app.netlify.app/auth/callback
               </code>
             </li>
           </ol>
 
           <p className="text-gray-500">
-            Netlify&apos;a deploy edince redirect URL&apos;ye site adresinizi de ekleyin:
+            Google veya e-posta ile giris acilmiyorsa sorun genelde Supabase
+            icindeki Redirect URL listesindedir. {APP_NAME} icin aktif site
+            adresinizin callback yolu mutlaka tanimli olmalidir:
             {" "}
-            <code className="rounded bg-white px-1">https://siteniz.netlify.app/auth/callback</code>
+            <code className="rounded bg-white px-1">https://ekipplan-app.netlify.app/auth/callback</code>
           </p>
         </div>
       )}

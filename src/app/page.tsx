@@ -3,7 +3,7 @@ import Link from "next/link";
 import {
   Leaf,
   Kanban,
-  Table2,
+  Bell,
   Upload,
   Mail,
   Shield,
@@ -11,7 +11,9 @@ import {
   CheckCircle2,
   Users,
   Sparkles,
+  Layers3,
 } from "lucide-react";
+import { APP_NAME, APP_TAGLINE } from "@/lib/config";
 
 const features = [
   {
@@ -22,10 +24,10 @@ const features = [
     color: "bg-tider-green-light text-tider-green",
   },
   {
-    icon: Table2,
-    title: "Tablo Görünümü",
+    icon: Layers3,
+    title: "Çoklu Grup Yönetimi",
     description:
-      "Tüm görevleri Excel benzeri tabloda listeleyin, arayın ve sıralayın.",
+      "Birden fazla ekip kurun, aktif grubunuzu değiştirin ve üyeleri ayrı ayrı yönetin.",
     color: "bg-gray-100 text-gray-600",
   },
   {
@@ -36,10 +38,10 @@ const features = [
     color: "bg-tider-orange-light text-tider-orange",
   },
   {
-    icon: Mail,
-    title: "Gelen Talepler",
+    icon: Bell,
+    title: "Kalıcı Bildirimler",
     description:
-      "E-posta ve webhook ile gelen istekleri tek tıkla resmi göreve dönüştürün.",
+      "Davetler ve güncellemeler uygulama içinde saklanır; kaçırılan işlem kalmaz.",
     color: "bg-tider-orange-light text-tider-orange",
   },
   {
@@ -66,14 +68,14 @@ const steps = [
 ];
 
 export const metadata: Metadata = {
-  title: "TIDER Görev Yönetimi — NGO Görev Takip Platformu",
+  title: `${APP_NAME} — Ekip ve Görev Yönetimi`,
   description:
-    "Sivil toplum kuruluşları için modern görev yönetimi. Kanban panosu, AI import ve ekip yönetimi.",
+    `${APP_NAME} ile ekipler, görevler, projeler ve bildirimler tek panelde yönetilir.`,
 };
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[var(--background)]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(210,245,223,0.9),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(255,229,200,0.7),_transparent_28%),linear-gradient(180deg,_#f8fbf8_0%,_#ffffff_45%,_#f7fafc_100%)]">
       {/* Navbar */}
       <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -82,9 +84,9 @@ export default function HomePage() {
               <Leaf className="h-5 w-5 text-white" />
             </div>
             <div>
-              <span className="text-lg font-bold text-gray-900">TIDER Görev</span>
+              <span className="text-lg font-bold text-gray-900">{APP_NAME}</span>
               <span className="hidden sm:inline text-sm text-gray-400 ml-2">
-                NGO Task Manager
+                {APP_TAGLINE}
               </span>
             </div>
           </div>
@@ -113,18 +115,35 @@ export default function HomePage() {
             <div>
               <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-tider-green-light px-4 py-1.5 text-sm font-medium text-tider-green-dark">
                 <Sparkles className="h-4 w-4" />
-                {"NGO'lar için tasarlandı"}
+                Modern ekip yönetimi
               </div>
               <h1 className="text-4xl font-bold leading-tight text-gray-900 lg:text-5xl">
-                Görev kaosunu
-                <span className="text-tider-green"> bitirin</span>, ekibinizi
-                <span className="text-tider-orange"> güçlendirin</span>
+                Ekipleri, görevleri ve
+                <span className="text-tider-green"> projeleri</span> tek yerden
+                <span className="text-tider-orange"> yönetin</span>
               </h1>
               <p className="mt-6 text-lg text-gray-600 leading-relaxed">
-                TIDER Görev Yönetimi, sivil toplum kuruluşları için hafif ve
-                modern bir görev takip platformudur. Patronunuz tüm süreci tek
-                yerden yönetir; ekip üyeleri görevlerini kolayca tamamlar.
+                {APP_NAME}, ekip kurma, görev dağıtma, davet gönderme, proje
+                takibi ve bildirim yönetimini tek ekranda toplayan modern bir
+                çalışma alanıdır. Patronlar ve ekip üyeleri aynı akışta, daha
+                net ve daha hızlı ilerler.
               </p>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                {[
+                  "Kanban panosu ve görev detay ekranları",
+                  "Çoklu grup ve üye yönetimi",
+                  "Proje, alt proje ve alt görev desteği",
+                  "Uygulama içi bildirim ve davet akışı",
+                ].map((item) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-2 rounded-xl bg-white/80 px-4 py-3 text-sm text-gray-700 shadow-sm ring-1 ring-gray-100"
+                  >
+                    <CheckCircle2 className="h-4 w-4 text-tider-green" />
+                    {item}
+                  </div>
+                ))}
+              </div>
               <div className="mt-8 flex flex-wrap gap-4">
                 <Link
                   href="/login"
@@ -149,7 +168,7 @@ export default function HomePage() {
                   <div className="h-3 w-3 rounded-full bg-red-400" />
                   <div className="h-3 w-3 rounded-full bg-yellow-400" />
                   <div className="h-3 w-3 rounded-full bg-green-400" />
-                  <span className="ml-2 text-xs text-gray-400">Görev Panosu</span>
+                  <span className="ml-2 text-xs text-gray-400">{APP_NAME} Paneli</span>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   {[
@@ -172,7 +191,7 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="absolute -bottom-4 -left-4 rounded-xl bg-tider-orange px-4 py-2 text-sm font-semibold text-white shadow-lg">
-                + AI Import
+                + Bildirimler
               </div>
             </div>
           </div>
@@ -184,7 +203,7 @@ export default function HomePage() {
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900">Neler sunuyoruz?</h2>
           <p className="mt-3 text-gray-500">
-            Ekip lideriniz için ihtiyaç duyulan her şey, tek platformda
+            Günlük operasyon için gereken temel araçlar tek panelde
           </p>
         </div>
         <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -221,7 +240,7 @@ export default function HomePage() {
                 Nasıl çalışır?
               </h2>
               <p className="mt-3 text-gray-500">
-                Dört adımda görev yönetimine başlayın
+                Dakikalar içinde ekibinizi kurup kullanmaya başlayın
               </p>
               <ul className="mt-8 space-y-4">
                 {steps.map((step, i) => (
@@ -235,18 +254,18 @@ export default function HomePage() {
               </ul>
             </div>
             <div className="rounded-2xl bg-tider-green p-8 text-white">
-              <h3 className="text-xl font-bold">Patron için tasarlandı</h3>
+              <h3 className="text-xl font-bold">{APP_NAME} kimler için?</h3>
               <p className="mt-3 text-white/80 leading-relaxed">
-                Gelen e-postalar, Excel listeleri ve manuel görevler — hepsi tek
-                panelde birleşir. Artık görevler kaybolmaz, ekip her zaman ne
-                yapması gerektiğini bilir.
+                Küçük ekiplerden büyüyen organizasyonlara kadar herkes için
+                sade ama güçlü bir çalışma alanı sunar. Görevler kaybolmaz,
+                sorumluluklar görünür olur ve ekip aynı ekrandan ilerler.
               </p>
               <ul className="mt-6 space-y-3">
                 {[
                   "Görev atama ve onaylama",
-                  "Kanban ve tablo görünümü",
-                  "AI destekli toplu içe aktarma",
-                  "E-posta bildirimleri",
+                  "Kanban görünümü ve detay takibi",
+                  "Çoklu grup ve davet yönetimi",
+                  "Uygulama içi bildirimler",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2 text-sm">
                     <CheckCircle2 className="h-4 w-4 text-tider-orange" />
@@ -265,7 +284,7 @@ export default function HomePage() {
           Hemen başlayın
         </h2>
         <p className="mt-3 text-gray-500">
-          Ücretsiz kayıt olun ve ekibinizin görev yönetimini kolaylaştırın
+          Hesabınızı oluşturun, grubunuzu kurun ve ekibinizle hemen çalışmaya başlayın
         </p>
         <div className="mt-8 flex justify-center gap-4">
           <Link
@@ -292,11 +311,11 @@ export default function HomePage() {
               <Leaf className="h-4 w-4 text-white" />
             </div>
             <span className="text-sm font-medium text-gray-600">
-              TIDER Görev Yönetimi © {new Date().getFullYear()}
+              {APP_NAME} © {new Date().getFullYear()}
             </span>
           </div>
           <p className="text-xs text-gray-400">
-            Sivil toplum kuruluşları için görev yönetim platformu
+            {APP_TAGLINE}
           </p>
         </div>
       </footer>

@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { APP_NAME } from "@/lib/config";
 
 export interface TaskNotificationPayload {
   to: string;
@@ -78,7 +79,7 @@ export async function sendEmail(payload: {
       });
 
       await transporter.sendMail({
-        from: process.env.EMAIL_FROM || `TIDER Görev Yönetimi <${smtpUser}>`,
+        from: process.env.EMAIL_FROM || `${APP_NAME} <${smtpUser}>`,
         to: payload.to,
         subject: payload.subject,
         html: payload.html,
@@ -101,7 +102,7 @@ export async function sendEmail(payload: {
           "Authorization": `Bearer ${resendApiKey}`,
         },
         body: JSON.stringify({
-          from: process.env.EMAIL_FROM || "TIDER Görev Yönetimi <onboarding@resend.dev>",
+          from: process.env.EMAIL_FROM || `${APP_NAME} <onboarding@resend.dev>`,
           to: [payload.to],
           subject: payload.subject,
           html: payload.html,
@@ -222,9 +223,9 @@ export async function sendInviteEmail(payload: {
 }): Promise<{ success: boolean; message: string }> {
   const html = `
     <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #eee; border-radius: 8px;">
-      <h2 style="color: #f57c00; margin-top: 0;">TIDER Görev Yönetimine Davet Edildiniz</h2>
+      <h2 style="color: #f57c00; margin-top: 0;">${APP_NAME} platformuna davet edildiniz</h2>
       <p>Merhaba ${payload.fullName},</p>
-      <p><strong>${payload.invitedBy}</strong> sizi TIDER Görev Yönetim sistemine davet etti.</p>
+      <p><strong>${payload.invitedBy}</strong> sizi ${APP_NAME} sistemine davet etti.</p>
       <p>Hesabınızı oluşturup size atanan görevleri görmek için aşağıdaki butona tıklayabilirsiniz:</p>
       <p style="margin-top: 25px;">
         <a href="${payload.signupUrl}" 
@@ -237,7 +238,7 @@ export async function sendInviteEmail(payload: {
 
   return sendEmail({
     to: payload.to,
-    subject: "TIDER Görev Yönetimi — Ekip Daveti",
+    subject: `${APP_NAME} — Ekip Daveti`,
     html,
   });
 }

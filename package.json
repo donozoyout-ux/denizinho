@@ -1,7 +1,7 @@
 {
   "name": "denizinho",
   "version": "0.1.0",
-  "description": "TIDER Görev Yönetimi - Modern NGO görev yönetim uygulaması",
+  "description": "EkipPlan - ekip, gorev ve proje yonetim uygulamasi",
   "private": true,
   "scripts": {
     "dev": "next dev",

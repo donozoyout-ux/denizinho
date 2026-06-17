@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Users, Plus, Mail, Check, X, Loader2, Sparkles } from "lucide-react";
+import { APP_NAME } from "@/lib/config";
 
 interface PendingInvitation {
   id: string;
@@ -115,7 +116,7 @@ export default function GroupSetupPage() {
             <Users className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">
-            TIDER Görev Yönetimi
+            {APP_NAME}
           </h1>
           <p className="mt-2 text-sm text-gray-500">
             Başlamak için bir grup oluşturun veya size gelen bir daveti kabul edin.
@@ -221,7 +222,7 @@ export default function GroupSetupPage() {
                 type="text"
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
-                placeholder="Örn: TIDER İstanbul Ekibi"
+                placeholder="Orn: Marmara Saha Ekibi"
                 required
                 className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-tider-green focus:outline-none focus:ring-1 focus:ring-tider-green"
               />
