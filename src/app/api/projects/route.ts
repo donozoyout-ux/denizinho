@@ -39,6 +39,7 @@ export async function POST(request: Request) {
       status: body.status || "todo",
       created_by: user.id,
       group_id: user.group_id || null,
+      parent_id: body.parent_id || null,
     })
     .select()
     .single();

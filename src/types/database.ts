@@ -46,6 +46,7 @@ export interface Project {
   created_at: string;
   updated_at: string;
   group_id?: string | null;
+  parent_id?: string | null;
 }
 
 export interface Task {
@@ -59,6 +60,7 @@ export interface Task {
   created_at: string;
   updated_at: string;
   project_id?: string | null;
+  parent_id?: string | null;
   assignee?: User | null;
   group_id?: string | null;
   creator?: User | null;

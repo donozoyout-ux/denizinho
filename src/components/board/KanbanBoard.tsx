@@ -56,8 +56,16 @@ export function KanbanBoard({
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
-  // Filter tasks based on active project
-  const filteredTasks = tasks.filter((t) => {
+  // Yalnızca üst görevler panoda (alt görevler detayda)
+  const rootTasks = tasks.filter((t) => !t.parent_id);
+  const subtaskCounts = tasks.reduce<Record<string, number>>((acc, t) => {
+    if (t.parent_id) {
+      acc[t.parent_id] = (acc[t.parent_id] ?? 0) + 1;
+    }
+    return acc;
+  }, {});
+
+  const filteredTasks = rootTasks.filter((t) => {
     if (activeProjectId === "all") return true;
     return t.project_id === activeProjectId;
   });
@@ -265,8 +273,8 @@ const canMoveToStatus = (
               user={user}
               currentUserId={currentUserId}
               teamMembers={teamMembers}
-              onEditTask={isGroupAdmin(user) ? setEditingTask : undefined}
               onViewTask={setViewingTask}
+              subtaskCounts={subtaskCounts}
               onReassign={isGroupAdmin(user) ? handleReassign : undefined}
             />
           ))}
@@ -310,6 +318,11 @@ const canMoveToStatus = (
         task={viewingTask}
         open={!!viewingTask}
         onClose={() => setViewingTask(null)}
+        onEdit={(t) => {
+          setViewingTask(null);
+          setEditingTask(t);
+        }}
+        user={user}
       />
       </div>
     </div>

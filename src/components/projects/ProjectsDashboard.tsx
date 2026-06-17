@@ -33,6 +33,7 @@ export function ProjectsDashboard({
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [modalOpen, setModalOpen] = useState(false);
+  const [parentProjectId, setParentProjectId] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   // Form State
@@ -53,7 +54,16 @@ export function ProjectsDashboard({
     return { total, completed, percent };
   };
 
+  const rootProjects = projects.filter((p) => !p.parent_id);
+  const getSubProjects = (parentId: string) =>
+    projects.filter((p) => p.parent_id === parentId);
+
   // Create Project
+  const openCreateModal = (parentId: string | null = null) => {
+    setParentProjectId(parentId);
+    setModalOpen(true);
+  };
+
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -65,7 +75,7 @@ export function ProjectsDashboard({
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description, status }),
+        body: JSON.stringify({ title, description, status, parent_id: parentProjectId }),
       });
 
       const data = await res.json();
@@ -76,6 +86,7 @@ export function ProjectsDashboard({
       setDescription("");
       setStatus("todo");
       setModalOpen(false);
+      setParentProjectId(null);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Bilinmeyen hata");
@@ -161,7 +172,7 @@ export function ProjectsDashboard({
           </span>
         </div>
         {isAdmin && (
-          <Button onClick={() => setModalOpen(true)} className="flex items-center gap-2">
+          <Button onClick={() => openCreateModal()} className="flex items-center gap-2">
             <FolderPlus className="h-4 w-4" />
             Yeni Proje Ekle
           </Button>
@@ -171,7 +182,7 @@ export function ProjectsDashboard({
       {/* Columns Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {columns.map((col) => {
-          const colProjects = projects.filter((p) => p.status === col.id);
+          const colProjects = rootProjects.filter((p) => p.status === col.id);
 
           return (
             <div 
@@ -203,7 +214,7 @@ export function ProjectsDashboard({
                     return (
                       <div
                         key={project.id}
-                        className="group relative flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all hover:shadow-md hover:border-gray-300"
+                        className="group relative flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-tider-green/30 hover:-translate-y-0.5 animate-in fade-in slide-in-from-bottom-2"
                       >
                         <div>
                           {/* Title */}
@@ -242,6 +253,38 @@ export function ProjectsDashboard({
                             </div>
                           </div>
                         </div>
+
+                        {/* Alt projeler */}
+                        {getSubProjects(project.id).length > 0 && (
+                          <div className="mt-3 space-y-2 border-t border-gray-50 pt-3">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-500">
+                              Alt Projeler
+                            </p>
+                            {getSubProjects(project.id).map((sub) => (
+                              <div
+                                key={sub.id}
+                                className="flex items-center justify-between rounded-lg bg-violet-50 px-3 py-2 text-xs"
+                              >
+                                <span className="font-medium text-violet-900">{sub.title}</span>
+                                <button
+                                  onClick={() => router.push(`/board?project_id=${sub.id}`)}
+                                  className="text-violet-600 hover:underline"
+                                >
+                                  Görevler →
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {isAdmin && (
+                          <button
+                            onClick={() => openCreateModal(project.id)}
+                            className="mt-2 text-xs font-medium text-violet-600 hover:text-violet-800 transition-colors"
+                          >
+                            + Alt proje ekle
+                          </button>
+                        )}
 
                         {/* Card Footer Actions */}
                         <div className="mt-5 pt-3 border-t border-gray-50 flex items-center justify-between">
@@ -316,7 +359,11 @@ export function ProjectsDashboard({
       </div>
 
       {/* New Project Modal */}
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Yeni Proje Ekle">
+      <Modal
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); setParentProjectId(null); }}
+        title={parentProjectId ? "Alt Proje Ekle" : "Yeni Proje Ekle"}
+      >
         <form onSubmit={handleCreateProject} className="space-y-4">
           <Input
             id="projTitle"

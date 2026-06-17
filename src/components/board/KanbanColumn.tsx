@@ -33,6 +33,7 @@ interface KanbanColumnProps {
   teamMembers?: User[];
   onEditTask?: (task: Task) => void;
   onViewTask?: (task: Task) => void;
+  subtaskCounts?: Record<string, number>;
   onReassign?: (taskId: string, newAssigneeId: string) => void;
 }
 
@@ -44,6 +45,7 @@ export function KanbanColumn({
   teamMembers = [],
   onEditTask,
   onViewTask,
+  subtaskCounts = {},
   onReassign,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
@@ -77,8 +79,8 @@ export function KanbanColumn({
             user={user}
             currentUserId={currentUserId}
             teamMembers={teamMembers}
-            onEdit={onEditTask}
             onView={onViewTask}
+            subtaskCount={subtaskCounts[task.id] ?? 0}
             onReassign={onReassign}
           />
         ))}

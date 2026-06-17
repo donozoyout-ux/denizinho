@@ -51,7 +51,6 @@ export async function GET() {
       "*, group:groups(id, name, owner_id), inviter:users!invitations_inviter_id_fkey(id, full_name, email)"
     )
     .in("email", emails)
-    .eq("status", "pending")
     .order("created_at", { ascending: false });
 
   if (error) {
