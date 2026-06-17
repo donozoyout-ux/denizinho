@@ -1,6 +1,7 @@
 {
-  "name": "biyoloji",
+  "name": "denizinho",
   "version": "0.1.0",
+  "description": "TIDER Görev Yönetimi - Modern NGO görev yönetim uygulaması",
   "private": true,
   "scripts": {
     "dev": "next dev",
