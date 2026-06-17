@@ -35,6 +35,7 @@ export function TeamManagement({
     activeGroupId || initialGroups[0]?.id || ""
   );
   const [members, setMembers] = useState(initialMembers);
+  const [loadingMembers, setLoadingMembers] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newGroupName, setNewGroupName] = useState("");
   const [creating, setCreating] = useState(false);
@@ -42,10 +43,15 @@ export function TeamManagement({
   const [createError, setCreateError] = useState("");
 
   const refreshMembers = useCallback(async (groupId: string) => {
-    const res = await fetch(`/api/team?groupId=${groupId}`);
-    if (res.ok) {
-      const data = await res.json();
-      setMembers(data);
+    setLoadingMembers(true);
+    try {
+      const res = await fetch(`/api/team?groupId=${groupId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMembers(data);
+      }
+    } finally {
+      setLoadingMembers(false);
     }
   }, []);
 
@@ -59,7 +65,6 @@ export function TeamManagement({
         for (const g of [...prev, ...fetched]) merged.set(g.id, g);
         return Array.from(merged.values());
       });
-      if (data.activeGroupId) setSelectedGroupId(data.activeGroupId);
     }
   }, []);
 
@@ -78,7 +83,14 @@ export function TeamManagement({
   }, [initialGroups]);
 
   useEffect(() => {
+    if (activeGroupId) {
+      setSelectedGroupId(activeGroupId);
+    }
+  }, [activeGroupId]);
+
+  useEffect(() => {
     if (selectedGroupId) {
+      setMembers([]);
       refreshMembers(selectedGroupId);
     }
   }, [selectedGroupId, refreshMembers]);
@@ -86,6 +98,8 @@ export function TeamManagement({
   const handleSwitchGroup = async (groupId: string) => {
     if (groupId === selectedGroupId) return;
     setSwitching(true);
+    setMembers([]);
+    setSelectedGroupId(groupId);
     try {
       const res = await fetch("/api/groups", {
         method: "PATCH",
@@ -93,7 +107,6 @@ export function TeamManagement({
         body: JSON.stringify({ groupId }),
       });
       if (res.ok) {
-        setSelectedGroupId(groupId);
         router.refresh();
       }
     } finally {
@@ -129,6 +142,7 @@ export function TeamManagement({
           for (const g of [...prev, newGroup]) merged.set(g.id, g);
           return Array.from(merged.values());
         });
+        setMembers([]);
         setSelectedGroupId(data.id);
         router.refresh();
     } catch {
@@ -186,13 +200,21 @@ export function TeamManagement({
       {selectedGroup && (
         <>
           <InviteMemberForm
+            groupId={selectedGroupId}
             onInvited={() => refreshMembers(selectedGroupId)}
             groupName={selectedGroup.name}
           />
-          <TeamMemberList
-            members={members}
-            onRefresh={() => refreshMembers(selectedGroupId)}
-          />
+          {loadingMembers ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl border border-gray-100 bg-white py-12 text-sm text-gray-500">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              Üyeler yükleniyor...
+            </div>
+          ) : (
+            <TeamMemberList
+              members={members}
+              onRefresh={() => refreshMembers(selectedGroupId)}
+            />
+          )}
         </>
       )}
 

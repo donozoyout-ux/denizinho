@@ -89,3 +89,37 @@ export async function fetchUserGroups(
     a.name.localeCompare(b.name, "tr")
   );
 }
+
+/** Belirli bir grubun üyelerini getir (yalnızca group_members + owner) */
+export async function getGroupMembers(
+  admin: SupabaseClient,
+  groupId: string
+) {
+  const { data: memberships, error: memError } = await admin
+    .from("group_members")
+    .select("user_id")
+    .eq("group_id", groupId);
+
+  let userIds: string[] = [];
+
+  if (!memError && memberships && memberships.length > 0) {
+    userIds = memberships.map((m) => m.user_id);
+  } else {
+    const { data: group } = await admin
+      .from("groups")
+      .select("owner_id")
+      .eq("id", groupId)
+      .maybeSingle();
+    if (group?.owner_id) userIds = [group.owner_id];
+  }
+
+  if (userIds.length === 0) return [];
+
+  const { data, error } = await admin
+    .from("users")
+    .select("*")
+    .in("id", userIds)
+    .order("full_name");
+
+  return error ? [] : data ?? [];
+}

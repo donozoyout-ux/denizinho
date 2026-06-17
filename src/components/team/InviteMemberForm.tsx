@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/Input";
 import { UserPlus } from "lucide-react";
 
 interface InviteMemberFormProps {
+  groupId: string;
   onInvited: () => void;
   groupName?: string;
 }
 
-export function InviteMemberForm({ onInvited, groupName }: InviteMemberFormProps) {
+export function InviteMemberForm({ groupId, onInvited, groupName }: InviteMemberFormProps) {
   const [email, setEmail] = useState("");
   const [sendEmail, setSendEmail] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,7 +28,7 @@ export function InviteMemberForm({ onInvited, groupName }: InviteMemberFormProps
       const res = await fetch("/api/invitations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, sendEmail }),
+        body: JSON.stringify({ email, sendEmail, groupId }),
       });
 
       const data = await res.json();

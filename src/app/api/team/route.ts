@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth";
+import { getGroupMembers } from "@/lib/groups-server";
 import type { UserRole } from "@/types/database";
 
 export async function GET(request: Request) {
@@ -11,43 +11,22 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const groupId = searchParams.get("groupId") || user.group_id;
+  const groupId = searchParams.get("groupId");
 
   if (!groupId) {
-    return NextResponse.json([]);
+    return NextResponse.json({ error: "groupId gerekli" }, { status: 400 });
   }
 
   const admin = createAdminClient();
-  if (admin) {
-    const { data: memberships, error: memError } = await admin
-      .from("group_members")
-      .select("user_id")
-      .eq("group_id", groupId);
-
-    if (!memError && memberships && memberships.length > 0) {
-      const userIds = memberships.map((m) => m.user_id);
-      const { data, error } = await admin
-        .from("users")
-        .select("*")
-        .in("id", userIds)
-        .order("full_name");
-
-      if (!error) return NextResponse.json(data ?? []);
-    }
+  if (!admin) {
+    return NextResponse.json(
+      { error: "Sunucu yapılandırması eksik" },
+      { status: 503 }
+    );
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .eq("group_id", groupId)
-    .order("full_name");
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(data);
+  const members = await getGroupMembers(admin, groupId);
+  return NextResponse.json(members);
 }
 
 export async function PATCH(request: Request) {
@@ -83,9 +62,14 @@ export async function PATCH(request: Request) {
   }
 
   const admin = createAdminClient();
-  const supabase = admin || (await createClient());
+  if (!admin) {
+    return NextResponse.json(
+      { error: "Sunucu yapılandırması eksik" },
+      { status: 503 }
+    );
+  }
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from("users")
     .update(updateData)
     .eq("id", userId)

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth";
-import { fetchUserGroups } from "@/lib/groups-server";
+import { fetchUserGroups, getGroupMembers } from "@/lib/groups-server";
 import { Header } from "@/components/layout/Header";
 import { TeamManagement } from "@/components/team/TeamManagement";
 import type { User } from "@/types/database";
@@ -25,30 +25,7 @@ export default async function TeamPage() {
 
   if (admin) {
     groups = await fetchUserGroups(admin, user.id, user.group_id);
-
-    const activeGroupId = user.group_id;
-    const { data: memberRows } = await admin
-      .from("group_members")
-      .select("user_id")
-      .eq("group_id", activeGroupId);
-
-    if (memberRows && memberRows.length > 0) {
-      const ids = memberRows.map((r) => r.user_id);
-      const { data } = await admin
-        .from("users")
-        .select("*")
-        .in("id", ids)
-        .order("full_name");
-      members = (data as User[]) ?? [];
-    } else {
-      // Fallback: users.group_id ile üyeler
-      const { data } = await admin
-        .from("users")
-        .select("*")
-        .eq("group_id", activeGroupId)
-        .order("full_name");
-      members = (data as User[]) ?? [];
-    }
+    members = await getGroupMembers(admin, user.group_id);
   }
 
   return (

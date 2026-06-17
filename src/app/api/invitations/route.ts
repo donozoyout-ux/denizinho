@@ -67,19 +67,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!user.group_id) {
+  const body = await request.json();
+  const { email, fullName, sendEmail, groupId: requestedGroupId } = body as {
+    email: string;
+    fullName?: string;
+    sendEmail?: boolean;
+    groupId?: string;
+  };
+
+  const targetGroupId = requestedGroupId || user.group_id;
+  if (!targetGroupId) {
     return NextResponse.json(
       { error: "Önce bir grup oluşturmalısınız" },
       { status: 400 }
     );
   }
-
-  const body = await request.json();
-  const { email, fullName, sendEmail } = body as {
-    email: string;
-    fullName?: string;
-    sendEmail?: boolean;
-  };
 
   if (!email?.includes("@")) {
     return NextResponse.json(
@@ -93,25 +95,46 @@ export async function POST(request: Request) {
   const { admin, error: adminError } = requireAdminClient();
   if (adminError) return adminError;
 
-  // Zaten grupta mı kontrol et
-  const { data: existingUser } = await admin!
-    .from("users")
-    .select("id, group_id")
-    .eq("email", normalizedEmail)
+  const { data: inviterMembership } = await admin!
+    .from("group_members")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("group_id", targetGroupId)
     .maybeSingle();
 
-  if (existingUser?.group_id === user.group_id) {
+  if (!inviterMembership) {
     return NextResponse.json(
-      { error: "Bu kullanıcı zaten grubunuzda" },
-      { status: 409 }
+      { error: "Bu grubun üyesi değilsiniz" },
+      { status: 403 }
     );
   }
 
-  // Zaten bekleyen davet var mı?
+  const { data: existingUser } = await admin!
+    .from("users")
+    .select("id")
+    .eq("email", normalizedEmail)
+    .maybeSingle();
+
+  if (existingUser) {
+    const { data: existingMembership } = await admin!
+      .from("group_members")
+      .select("id")
+      .eq("user_id", existingUser.id)
+      .eq("group_id", targetGroupId)
+      .maybeSingle();
+
+    if (existingMembership) {
+      return NextResponse.json(
+        { error: "Bu kullanıcı zaten bu grupta" },
+        { status: 409 }
+      );
+    }
+  }
+
   const { data: existingInvite } = await admin!
     .from("invitations")
     .select("id")
-    .eq("group_id", user.group_id)
+    .eq("group_id", targetGroupId)
     .eq("email", normalizedEmail)
     .eq("status", "pending")
     .maybeSingle();
@@ -127,7 +150,7 @@ export async function POST(request: Request) {
   const { data: invitation, error: invError } = await admin!
     .from("invitations")
     .insert({
-      group_id: user.group_id,
+      group_id: targetGroupId,
       email: normalizedEmail,
       inviter_id: user.id,
       status: "pending",
