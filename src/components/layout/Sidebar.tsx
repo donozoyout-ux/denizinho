@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { isGroupAdmin } from "@/lib/auth-client";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@/types/database";
+import { APP_NAME, APP_TAGLINE } from "@/lib/config";
 import { RoleBadge } from "@/components/ui/Badge";
 
 interface SidebarProps {
@@ -55,8 +56,8 @@ export function Sidebar({ user }: SidebarProps) {
           <Leaf className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h1 className="text-base font-bold text-gray-900">TIDER Görev</h1>
-          <p className="text-xs text-gray-500">NGO Task Manager</p>
+          <h1 className="text-base font-bold text-gray-900">{APP_NAME}</h1>
+          <p className="text-xs text-gray-500">{APP_TAGLINE}</p>
         </div>
       </div>
 

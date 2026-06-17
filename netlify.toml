@@ -3,3 +3,9 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+[functions]
+  directory = "netlify/functions"
+
+[functions."scheduled-email-sync"]
+  schedule = "*/15 * * * *"

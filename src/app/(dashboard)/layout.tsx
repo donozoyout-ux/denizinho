@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
+import { APP_NAME } from "@/lib/config";
+
 import { NotificationBell } from "@/components/layout/NotificationBell";
 
 export const revalidate = 30;
@@ -41,7 +43,7 @@ export default async function DashboardLayout({
         {/* Global Top Navbar */}
         <header className="flex h-16 items-center justify-between border-b border-gray-100 bg-white px-8">
           <div className="text-sm font-semibold text-gray-700">
-            {user.group_id ? "TIDER Çalışma Alanı" : "Grup Oluşturun veya Davet Kabul Edin"}
+            {user.group_id ? `${APP_NAME} Çalışma Alanı` : "Grup Oluşturun veya Davet Kabul Edin"}
           </div>
           <div className="flex items-center gap-4">
             <NotificationBell />

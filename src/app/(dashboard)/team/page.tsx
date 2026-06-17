@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth";
 import { Header } from "@/components/layout/Header";
 import { TeamManagement } from "@/components/team/TeamManagement";
 import type { User } from "@/types/database";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function TeamPage() {
   const user = await getCurrentUser();
@@ -18,22 +18,51 @@ export default async function TeamPage() {
     redirect("/group-setup");
   }
 
-  const supabase = await createClient();
+  const admin = createAdminClient();
+  let groups: { id: string; name: string; owner_id: string; role: string }[] = [];
+  let members: User[] = [];
 
-  // Aynı gruptaki tüm üyeleri getir (RLS group_id bazlı filtreleyecek)
-  const { data: members } = await supabase
-    .from("users")
-    .select("*")
-    .eq("group_id", user.group_id)
-    .order("full_name");
+  if (admin) {
+    const { data: memberships } = await admin
+      .from("group_members")
+      .select("role, group:groups(id, name, owner_id)")
+      .eq("user_id", user.id);
+
+    groups = (memberships ?? [])
+      .filter((m) => m.group)
+      .map((m) => ({
+        ...(m.group as unknown as { id: string; name: string; owner_id: string }),
+        role: m.role as string,
+      }));
+
+    const activeGroupId = user.group_id;
+    const { data: memberRows } = await admin
+      .from("group_members")
+      .select("user_id")
+      .eq("group_id", activeGroupId);
+
+    if (memberRows && memberRows.length > 0) {
+      const ids = memberRows.map((r) => r.user_id);
+      const { data } = await admin
+        .from("users")
+        .select("*")
+        .in("id", ids)
+        .order("full_name");
+      members = (data as User[]) ?? [];
+    }
+  }
 
   return (
     <div className="space-y-8">
       <Header
         title="Ekip Yönetimi"
-        description="Üye davet edin ve ekip üyelerinizi yönetin"
+        description="Gruplarınızı yönetin, üye davet edin ve ekiplerinizi organize edin"
       />
-      <TeamManagement initialMembers={(members as User[]) ?? []} />
+      <TeamManagement
+        initialMembers={members}
+        initialGroups={groups}
+        activeGroupId={user.group_id}
+      />
     </div>
   );
 }

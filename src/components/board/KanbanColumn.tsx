@@ -5,54 +5,71 @@ import type { Task, TaskStatus, User } from "@/types/database";
 import { TASK_STATUS_LABELS } from "@/types/database";
 import { TaskCard } from "./TaskCard";
 import { cn } from "@/lib/utils";
+import { Plus } from "lucide-react";
 
-const columnColors: Record<TaskStatus, string> = {
-  todo: "border-t-gray-300",
-  in_progress: "border-t-tider-orange",
-  done: "border-t-tider-green",
- };
- 
- interface KanbanColumnProps {
-   status: TaskStatus;
-   tasks: Task[];
-   user: User;
-   currentUserId: string;
-   teamMembers?: User[];
-   onEditTask?: (task: Task) => void;
-   onReassign?: (taskId: string, newAssigneeId: string) => void;
- }
- 
- export function KanbanColumn({
-   status,
-   tasks,
-   user,
-   currentUserId,
-   teamMembers = [],
-   onEditTask,
-   onReassign,
- }: KanbanColumnProps) {
+const columnStyles: Record<TaskStatus, { border: string; bg: string; header: string }> = {
+  todo: {
+    border: "border-t-slate-400",
+    bg: "bg-white/70 backdrop-blur-md",
+    header: "text-slate-700",
+  },
+  in_progress: {
+    border: "border-t-tider-orange",
+    bg: "bg-white/75 backdrop-blur-md",
+    header: "text-tider-orange",
+  },
+  done: {
+    border: "border-t-tider-green",
+    bg: "bg-white/70 backdrop-blur-md",
+    header: "text-tider-green-dark",
+  },
+};
+
+interface KanbanColumnProps {
+  status: TaskStatus;
+  tasks: Task[];
+  user: User;
+  currentUserId: string;
+  teamMembers?: User[];
+  onEditTask?: (task: Task) => void;
+  onViewTask?: (task: Task) => void;
+  onReassign?: (taskId: string, newAssigneeId: string) => void;
+}
+
+export function KanbanColumn({
+  status,
+  tasks,
+  user,
+  currentUserId,
+  teamMembers = [],
+  onEditTask,
+  onViewTask,
+  onReassign,
+}: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const style = columnStyles[status];
 
   return (
     <div
       ref={setNodeRef}
       className={cn(
-        "flex flex-col rounded-2xl border border-gray-100 bg-gray-50/50",
-        "border-t-4",
-        columnColors[status],
-        isOver && "ring-2 ring-tider-green/30 bg-tider-green-light/30"
+        "flex min-h-[420px] flex-col rounded-2xl border border-white/60 shadow-lg",
+        "border-t-[5px]",
+        style.border,
+        style.bg,
+        isOver && "ring-2 ring-tider-green/40 scale-[1.01]"
       )}
     >
-      <div className="flex items-center justify-between px-4 py-3">
-        <h3 className="text-sm font-semibold text-gray-700">
+      <div className="flex items-center justify-between px-4 py-3.5">
+        <h3 className={cn("text-sm font-bold tracking-wide", style.header)}>
           {TASK_STATUS_LABELS[status]}
         </h3>
-        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-medium text-gray-500 shadow-sm">
+        <span className="flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-gray-100/90 px-2 text-xs font-bold text-gray-600">
           {tasks.length}
         </span>
       </div>
 
-      <div className="flex-1 space-y-3 px-3 pb-4 min-h-[200px]">
+      <div className="flex-1 space-y-3 px-3 pb-4">
         {tasks.map((task) => (
           <TaskCard
             key={task.id}
@@ -61,13 +78,15 @@ const columnColors: Record<TaskStatus, string> = {
             currentUserId={currentUserId}
             teamMembers={teamMembers}
             onEdit={onEditTask}
+            onView={onViewTask}
             onReassign={onReassign}
           />
         ))}
         {tasks.length === 0 && (
-          <p className="py-8 text-center text-xs text-gray-400">
-            Görev yok
-          </p>
+          <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200/80 py-10 text-center">
+            <Plus className="mb-2 h-5 w-5 text-gray-300" />
+            <p className="text-xs text-gray-400">Kart ekle veya sürükle</p>
+          </div>
         )}
       </div>
     </div>

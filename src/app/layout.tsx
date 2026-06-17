@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { APP_NAME, APP_TAGLINE } from "@/lib/config";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TIDER Görev Yönetimi",
-  description: "NGO görev yönetim sistemi — TIDER inspired",
+  title: APP_NAME,
+  description: APP_TAGLINE,
 };
 
 export default function RootLayout({

@@ -14,10 +14,8 @@ import {
 import { isGroupAdmin } from "@/lib/auth-client";
 import { KanbanColumn } from "./KanbanColumn";
 import { TaskCard } from "./TaskCard";
-import {
-  TaskFormModal,
-  type TaskFormData,
-} from "@/components/tasks/TaskFormModal";
+import { TaskFormModal, type TaskFormData } from "@/components/tasks/TaskFormModal";
+import { TaskDetailModal } from "@/components/tasks/TaskDetailModal";
 import { Button } from "@/components/ui/Button";
 import { Plus, ListFilter } from "lucide-react";
 import type { Task, User, Project, TaskStatus } from "@/types/database";
@@ -43,6 +41,7 @@ export function KanbanBoard({
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [viewingTask, setViewingTask] = useState<Task | null>(null);
 
   // Load project filter from query param or default to "all"
   const [activeProjectId, setActiveProjectId] = useState<string>(() => {
@@ -74,7 +73,7 @@ const canMoveToStatus = (
   ): boolean => {
     if (isGroupAdmin(user)) return true;
     if (task.assigned_to !== currentUserId) return false;
-    return newStatus === "done";
+    return true;
   };
 
   const updateTaskStatus = async (taskId: string, newStatus: TaskStatus) => {
@@ -206,8 +205,25 @@ const canMoveToStatus = (
     setEditingTask(null);
   };
 
+  const handleDeleteTask = async () => {
+    if (!editingTask) return;
+    const res = await fetch(`/api/tasks/${editingTask.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Görev silinemedi");
+    }
+    setTasks((prev) => prev.filter((t) => t.id !== editingTask.id));
+    setEditingTask(null);
+  };
+
   return (
-    <div>
+    <div className="relative -mx-2 rounded-3xl p-2">
+      {/* Trello tarzı arka plan */}
+      <div
+        className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-slate-800 via-slate-700 to-emerald-900 opacity-[0.12]"
+        aria-hidden
+      />
+      <div className="relative">
       {/* Dynamic Filter and Actions Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
         <div className="flex items-center gap-2">
@@ -250,7 +266,8 @@ const canMoveToStatus = (
               currentUserId={currentUserId}
               teamMembers={teamMembers}
               onEditTask={isGroupAdmin(user) ? setEditingTask : undefined}
-               onReassign={isGroupAdmin(user) ? handleReassign : undefined}
+              onViewTask={setViewingTask}
+              onReassign={isGroupAdmin(user) ? handleReassign : undefined}
             />
           ))}
         </div>
@@ -281,12 +298,20 @@ const canMoveToStatus = (
           open={!!editingTask}
           onClose={() => setEditingTask(null)}
           onSubmit={handleEditTask}
+          onDelete={handleDeleteTask}
           teamMembers={teamMembers}
           projects={projects}
           initialData={editingTask}
           title="Görevi Düzenle"
         />
       )}
+
+      <TaskDetailModal
+        task={viewingTask}
+        open={!!viewingTask}
+        onClose={() => setViewingTask(null)}
+      />
+      </div>
     </div>
   );
 }

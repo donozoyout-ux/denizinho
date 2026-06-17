@@ -76,7 +76,11 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { email, fullName } = body as { email: string; fullName?: string };
+  const { email, fullName, sendEmail } = body as {
+    email: string;
+    fullName?: string;
+    sendEmail?: boolean;
+  };
 
   if (!email?.includes("@")) {
     return NextResponse.json(
@@ -136,8 +140,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: invError.message }, { status: 500 });
   }
 
-  // E-posta yalnızca SEND_INVITE_EMAIL=true ise gönderilir (varsayılan: site-içi davet)
-  if (process.env.SEND_INVITE_EMAIL === "true") {
+  // E-posta: SEND_INVITE_EMAIL=true veya istemci sendEmail=true ise gönder
+  const shouldSendEmail =
+    sendEmail === true || process.env.SEND_INVITE_EMAIL === "true";
+
+  if (shouldSendEmail) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     try {
       await sendInviteEmail({
@@ -216,7 +223,14 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ message: "Davet reddedildi" });
   }
 
-  // Kabul et: kullanıcının group_id'sini güncelle (admin client ile RLS bypass)
+  // Kabul et: gruba üye ekle ve aktif grup olarak ayarla
+  await admin!
+    .from("group_members")
+    .upsert(
+      { user_id: user.id, group_id: invitation.group_id, role: "member" },
+      { onConflict: "user_id,group_id" }
+    );
+
   const { data: updatedUser, error: updateError } = await admin!
     .from("users")
     .update({ group_id: invitation.group_id })

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import type { Task, User } from "@/types/database";
 import { isGroupAdmin } from "@/lib/auth-client";
-import { formatDate } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 interface TaskCardProps {
@@ -21,6 +21,7 @@ interface TaskCardProps {
   currentUserId: string;
   teamMembers?: User[];
   onEdit?: (task: Task) => void;
+  onView?: (task: Task) => void;
   onReassign?: (taskId: string, newAssigneeId: string) => void;
 }
 
@@ -30,13 +31,22 @@ export function TaskCard({
   currentUserId,
   teamMembers = [],
   onEdit,
+  onView,
   onReassign,
 }: TaskCardProps) {
   const [showAssignDropdown, setShowAssignDropdown] = useState(false);
 
   const canDrag =
     isGroupAdmin(user) ||
-    (task.assigned_to === currentUserId && task.status !== "done");
+    task.assigned_to === currentUserId;
+
+  const handleCardClick = () => {
+    if (isGroupAdmin(user) && onEdit) {
+      onEdit(task);
+    } else if (onView) {
+      onView(task);
+    }
+  };
 
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
@@ -78,8 +88,8 @@ export function TaskCard({
           </button>
         )}
         <div
-          className="flex-1 min-w-0"
-          onClick={() => isGroupAdmin(user) && onEdit?.(task)}
+          className="flex-1 min-w-0 cursor-pointer"
+          onClick={handleCardClick}
         >
           <h4 className="text-sm font-semibold text-gray-900 truncate cursor-pointer">
             {task.title}
@@ -181,7 +191,7 @@ export function TaskCard({
               {task.due_date ? (
                 <span className="flex items-center gap-1 font-semibold text-tider-green-dark bg-tider-green-light/40 px-1.5 py-0.5 rounded">
                   <Calendar className="h-3 w-3" />
-                  {formatDate(task.due_date)}
+                  {formatDateTime(task.due_date)}
                 </span>
               ) : (
                 <span className="text-gray-400 italic">Belirtilmedi</span>

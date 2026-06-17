@@ -5,11 +5,13 @@ import type { Task, TaskStatus, User, Project } from "@/types/database";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { toDatetimeLocalValue } from "@/lib/utils";
 
 interface TaskFormModalProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: TaskFormData) => Promise<void>;
+  onDelete?: () => Promise<void>;
   teamMembers: User[];
   projects?: Project[];
   initialData?: Partial<Task>;
@@ -29,6 +31,7 @@ export function TaskFormModal({
   open,
   onClose,
   onSubmit,
+  onDelete,
   teamMembers,
   projects = [],
   initialData,
@@ -39,10 +42,11 @@ export function TaskFormModal({
     description: initialData?.description || "",
     assigned_to: initialData?.assigned_to || "",
     status: initialData?.status || "todo",
-    due_date: initialData?.due_date || "",
+    due_date: toDatetimeLocalValue(initialData?.due_date ?? null) || "",
     project_id: initialData?.project_id || "",
   });
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -52,7 +56,7 @@ export function TaskFormModal({
       description: initialData?.description || "",
       assigned_to: initialData?.assigned_to || "",
       status: initialData?.status || "todo",
-      due_date: initialData?.due_date || "",
+      due_date: toDatetimeLocalValue(initialData?.due_date ?? null) || "",
       project_id: initialData?.project_id || "",
     });
   }, [initialData]);
@@ -167,13 +171,18 @@ export function TaskFormModal({
             </select>
           </div>
 
-          <Input
-            id="due_date"
-            label="Son Tarih"
-            type="date"
-            value={form.due_date}
-            onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-          />
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-gray-700">
+              Son Tarih ve Saat
+            </label>
+            <input
+              id="due_date"
+              type="datetime-local"
+              value={form.due_date}
+              onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+              className="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm focus:border-tider-green focus:outline-none focus:ring-2 focus:ring-tider-green/20"
+            />
+          </div>
         </div>
 
         {error && (
@@ -182,13 +191,37 @@ export function TaskFormModal({
           </p>
         )}
 
-        <div className="flex justify-end gap-3 pt-2">
+        <div className="flex justify-between gap-3 pt-2">
+          {onDelete && (
+            <Button
+              type="button"
+              variant="danger"
+              loading={deleting}
+              onClick={async () => {
+                if (!confirm("Bu görevi silmek istediğinize emin misiniz?")) return;
+                setDeleting(true);
+                setError("");
+                try {
+                  await onDelete();
+                  onClose();
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Silinemedi");
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+            >
+              Sil
+            </Button>
+          )}
+          <div className="ml-auto flex gap-3">
           <Button variant="outline" type="button" onClick={onClose}>
             İptal
           </Button>
           <Button type="submit" loading={loading}>
             Kaydet
           </Button>
+          </div>
         </div>
       </form>
     </Modal>

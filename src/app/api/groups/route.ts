@@ -10,23 +10,46 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = await createClient();
-
-  // Kullanıcının kendi grubunu getir
-  if (user.group_id) {
-    const { data, error } = await supabase
-      .from("groups")
-      .select("*")
-      .eq("id", user.group_id)
-      .single();
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-    return NextResponse.json(data);
+  const admin = createAdminClient();
+  if (!admin) {
+    return NextResponse.json(
+      { error: "Sunucu yapılandırması eksik" },
+      { status: 503 }
+    );
   }
 
-  return NextResponse.json(null);
+  const { data: memberships, error: memError } = await admin
+    .from("group_members")
+    .select("role, group:groups(id, name, owner_id, created_at)")
+    .eq("user_id", user.id);
+
+  if (memError) {
+    // Fallback: single group_id on users table
+    if (user.group_id) {
+      const { data: group } = await admin
+        .from("groups")
+        .select("*")
+        .eq("id", user.group_id)
+        .single();
+      return NextResponse.json({
+        activeGroupId: user.group_id,
+        groups: group ? [{ ...group, role: "member" }] : [],
+      });
+    }
+    return NextResponse.json({ activeGroupId: null, groups: [] });
+  }
+
+  const groups = (memberships ?? [])
+    .filter((m) => m.group)
+    .map((m) => ({
+      ...(m.group as unknown as { id: string; name: string; owner_id: string; created_at: string }),
+      role: m.role,
+    }));
+
+  return NextResponse.json({
+    activeGroupId: user.group_id,
+    groups,
+  });
 }
 
 export async function POST(request: Request) {
@@ -35,21 +58,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (user.group_id) {
-    return NextResponse.json(
-      { error: "Zaten bir gruba üyesiniz" },
-      { status: 409 }
-    );
-  }
-
   const body = await request.json();
-  const { name } = body as { name: string };
+  const { name, setActive } = body as { name: string; setActive?: boolean };
 
   if (!name?.trim()) {
-    return NextResponse.json(
-      { error: "Grup adı gerekli" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Grup adı gerekli" }, { status: 400 });
   }
 
   const admin = createAdminClient();
@@ -60,7 +73,6 @@ export async function POST(request: Request) {
     );
   }
 
-  // 1. Grup oluştur
   const { data: group, error: groupError } = await admin
     .from("groups")
     .insert({ name: name.trim(), owner_id: user.id })
@@ -71,24 +83,86 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: groupError.message }, { status: 500 });
   }
 
-  // 2. Kullanıcının group_id'sini güncelle ve doğrula
+  await admin.from("group_members").upsert(
+    { user_id: user.id, group_id: group.id, role: "owner" },
+    { onConflict: "user_id,group_id" }
+  );
+
+  if (!user.group_id || setActive !== false) {
+    const { data: updatedUser, error: updateError } = await admin
+      .from("users")
+      .update({ group_id: group.id })
+      .eq("id", user.id)
+      .select("id, group_id")
+      .single();
+
+    if (updateError || !updatedUser?.group_id) {
+      return NextResponse.json(
+        { error: updateError?.message || "Aktif grup ayarlanamadı" },
+        { status: 500 }
+      );
+    }
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/team");
+  revalidatePath("/board");
+
+  return NextResponse.json(group, { status: 201 });
+}
+
+export async function PATCH(request: Request) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const { groupId } = body as { groupId: string };
+
+  if (!groupId) {
+    return NextResponse.json({ error: "Grup ID gerekli" }, { status: 400 });
+  }
+
+  const admin = createAdminClient();
+  if (!admin) {
+    return NextResponse.json(
+      { error: "Sunucu yapılandırması eksik" },
+      { status: 503 }
+    );
+  }
+
+  const { data: membership } = await admin
+    .from("group_members")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("group_id", groupId)
+    .maybeSingle();
+
+  if (!membership) {
+    return NextResponse.json(
+      { error: "Bu grubun üyesi değilsiniz" },
+      { status: 403 }
+    );
+  }
+
   const { data: updatedUser, error: updateError } = await admin
     .from("users")
-    .update({ group_id: group.id })
+    .update({ group_id: groupId })
     .eq("id", user.id)
     .select("id, group_id")
     .single();
 
   if (updateError || !updatedUser?.group_id) {
     return NextResponse.json(
-      { error: updateError?.message || "Gruba katılım başarısız" },
+      { error: updateError?.message || "Grup değiştirilemedi" },
       { status: 500 }
     );
   }
 
   revalidatePath("/dashboard");
-  revalidatePath("/group-setup");
   revalidatePath("/team");
+  revalidatePath("/board");
 
-  return NextResponse.json(group, { status: 201 });
+  return NextResponse.json({ message: "Aktif grup değiştirildi", groupId });
 }

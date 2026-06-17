@@ -4,23 +4,43 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth";
 import type { UserRole } from "@/types/database";
 
-export async function GET() {
+export async function GET(request: Request) {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!user.group_id) {
+  const { searchParams } = new URL(request.url);
+  const groupId = searchParams.get("groupId") || user.group_id;
+
+  if (!groupId) {
     return NextResponse.json([]);
   }
 
-  const supabase = await createClient();
+  const admin = createAdminClient();
+  if (admin) {
+    const { data: memberships, error: memError } = await admin
+      .from("group_members")
+      .select("user_id")
+      .eq("group_id", groupId);
 
-  // Aynı gruptaki tüm kullanıcıları getir
+    if (!memError && memberships && memberships.length > 0) {
+      const userIds = memberships.map((m) => m.user_id);
+      const { data, error } = await admin
+        .from("users")
+        .select("*")
+        .in("id", userIds)
+        .order("full_name");
+
+      if (!error) return NextResponse.json(data ?? []);
+    }
+  }
+
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("users")
     .select("*")
-    .eq("group_id", user.group_id)
+    .eq("group_id", groupId)
     .order("full_name");
 
   if (error) {

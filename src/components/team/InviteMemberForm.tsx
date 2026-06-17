@@ -7,10 +7,12 @@ import { UserPlus } from "lucide-react";
 
 interface InviteMemberFormProps {
   onInvited: () => void;
+  groupName?: string;
 }
 
-export function InviteMemberForm({ onInvited }: InviteMemberFormProps) {
+export function InviteMemberForm({ onInvited, groupName }: InviteMemberFormProps) {
   const [email, setEmail] = useState("");
+  const [sendEmail, setSendEmail] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -25,7 +27,7 @@ export function InviteMemberForm({ onInvited }: InviteMemberFormProps) {
       const res = await fetch("/api/invitations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, sendEmail }),
       });
 
       const data = await res.json();
@@ -52,25 +54,40 @@ export function InviteMemberForm({ onInvited }: InviteMemberFormProps) {
         <h3 className="text-lg font-semibold text-gray-900">Üye Davet Et</h3>
       </div>
       <p className="mb-4 text-sm text-gray-500">
-        Davet ettiğiniz kişi sisteme giriş yaptığında, üst bardaki bildirimler
-        simgesinden davetinizi görecek. Kabul ederse grubunuza otomatik olarak
-        dahil olur. E-posta gönderilmez.
+        {groupName ? (
+          <>
+            <strong>{groupName}</strong> grubuna davet gönderin. Kullanıcı giriş
+            yaptığında üst bardaki bildirimlerden görecek.
+          </>
+        ) : (
+          <>
+            Davet ettiğiniz kişi sisteme giriş yaptığında, üst bardaki bildirimler
+            simgesinden davetinizi görecek.
+          </>
+        )}
       </p>
-      <form onSubmit={handleInvite} className="grid gap-4 sm:grid-cols-2">
+      <form onSubmit={handleInvite} className="grid gap-4">
         <Input
           id="inviteEmail"
           label="E-posta Adresi"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="uye@tider.org"
+          placeholder="uye@kurum.org"
           required
         />
-        <div className="flex items-end">
-          <Button type="submit" loading={loading} className="w-full">
-            Davet Gönder
-          </Button>
-        </div>
+        <label className="flex items-center gap-2 text-sm text-gray-600">
+          <input
+            type="checkbox"
+            checked={sendEmail}
+            onChange={(e) => setSendEmail(e.target.checked)}
+            className="rounded border-gray-300 text-tider-green focus:ring-tider-green"
+          />
+          E-posta ile de bildir (resmi hesaplar için önerilir)
+        </label>
+        <Button type="submit" loading={loading} className="w-full sm:w-auto">
+          Davet Gönder
+        </Button>
       </form>
       {error && (
         <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
