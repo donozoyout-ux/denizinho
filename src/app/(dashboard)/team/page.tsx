@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth";
+import { fetchUserGroups } from "@/lib/groups-server";
 import { Header } from "@/components/layout/Header";
 import { TeamManagement } from "@/components/team/TeamManagement";
 import type { User } from "@/types/database";
@@ -23,17 +24,7 @@ export default async function TeamPage() {
   let members: User[] = [];
 
   if (admin) {
-    const { data: memberships } = await admin
-      .from("group_members")
-      .select("role, group:groups(id, name, owner_id)")
-      .eq("user_id", user.id);
-
-    groups = (memberships ?? [])
-      .filter((m) => m.group)
-      .map((m) => ({
-        ...(m.group as unknown as { id: string; name: string; owner_id: string }),
-        role: m.role as string,
-      }));
+    groups = await fetchUserGroups(admin, user.id, user.group_id);
 
     const activeGroupId = user.group_id;
     const { data: memberRows } = await admin
@@ -47,6 +38,14 @@ export default async function TeamPage() {
         .from("users")
         .select("*")
         .in("id", ids)
+        .order("full_name");
+      members = (data as User[]) ?? [];
+    } else {
+      // Fallback: users.group_id ile üyeler
+      const { data } = await admin
+        .from("users")
+        .select("*")
+        .eq("group_id", activeGroupId)
         .order("full_name");
       members = (data as User[]) ?? [];
     }

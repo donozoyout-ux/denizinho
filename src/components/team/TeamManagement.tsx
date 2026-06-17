@@ -53,10 +53,29 @@ export function TeamManagement({
     const res = await fetch("/api/groups");
     if (res.ok) {
       const data = await res.json();
-      setGroups(data.groups ?? []);
+      const fetched: GroupInfo[] = data.groups ?? [];
+      setGroups((prev) => {
+        const merged = new Map<string, GroupInfo>();
+        for (const g of [...prev, ...fetched]) merged.set(g.id, g);
+        return Array.from(merged.values());
+      });
       if (data.activeGroupId) setSelectedGroupId(data.activeGroupId);
     }
   }, []);
+
+  useEffect(() => {
+    refreshGroups();
+  }, [refreshGroups]);
+
+  useEffect(() => {
+    if (initialGroups.length > 0) {
+      setGroups((prev) => {
+        const merged = new Map<string, GroupInfo>();
+        for (const g of [...prev, ...initialGroups]) merged.set(g.id, g);
+        return Array.from(merged.values());
+      });
+    }
+  }, [initialGroups]);
 
   useEffect(() => {
     if (selectedGroupId) {
@@ -97,11 +116,21 @@ export function TeamManagement({
         setCreateError(data.error || "Grup oluşturulamadı");
         return;
       }
-      setNewGroupName("");
-      setShowCreateModal(false);
-      await refreshGroups();
-      setSelectedGroupId(data.id);
-      router.refresh();
+        setNewGroupName("");
+        setShowCreateModal(false);
+        setGroups((prev) => {
+          const merged = new Map<string, GroupInfo>();
+          const newGroup: GroupInfo = {
+            id: data.id,
+            name: data.name,
+            owner_id: data.owner_id,
+            role: "owner",
+          };
+          for (const g of [...prev, newGroup]) merged.set(g.id, g);
+          return Array.from(merged.values());
+        });
+        setSelectedGroupId(data.id);
+        router.refresh();
     } catch {
       setCreateError("Bağlantı hatası");
     } finally {

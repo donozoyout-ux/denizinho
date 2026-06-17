@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentUser } from "@/lib/auth";
+import { fetchUserGroups } from "@/lib/groups-server";
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -18,33 +19,7 @@ export async function GET() {
     );
   }
 
-  const { data: memberships, error: memError } = await admin
-    .from("group_members")
-    .select("role, group:groups(id, name, owner_id, created_at)")
-    .eq("user_id", user.id);
-
-  if (memError) {
-    // Fallback: single group_id on users table
-    if (user.group_id) {
-      const { data: group } = await admin
-        .from("groups")
-        .select("*")
-        .eq("id", user.group_id)
-        .single();
-      return NextResponse.json({
-        activeGroupId: user.group_id,
-        groups: group ? [{ ...group, role: "member" }] : [],
-      });
-    }
-    return NextResponse.json({ activeGroupId: null, groups: [] });
-  }
-
-  const groups = (memberships ?? [])
-    .filter((m) => m.group)
-    .map((m) => ({
-      ...(m.group as unknown as { id: string; name: string; owner_id: string; created_at: string }),
-      role: m.role,
-    }));
+  const groups = await fetchUserGroups(admin, user.id, user.group_id);
 
   return NextResponse.json({
     activeGroupId: user.group_id,

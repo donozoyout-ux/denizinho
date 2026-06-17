@@ -114,7 +114,7 @@ export function Sidebar({ user }: SidebarProps) {
         </div>
       </aside>
 
-      <Modal open={profileOpen} onClose={() => setProfileOpen(false)} title="Profili Yönet">
+      <Modal open={profileOpen} onClose={() => setProfileOpen(false)} title="Profili Yönet" size="sm">
         <ProfileSettingsForm user={user} />
       </Modal>
     </>
