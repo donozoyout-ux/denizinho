@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { User } from "@/types/database";
+import { isGroupAdmin } from "@/lib/auth-client";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { MessageSquare, Info } from "lucide-react";
@@ -60,7 +61,7 @@ export function ProfileSettingsForm({ user }: ProfileSettingsFormProps) {
             <div>
               <label className="block text-sm font-medium text-gray-500">Sistem Rolü</label>
               <div className="mt-1 block w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500 capitalize">
-                {user.role === "patron" ? "Patron (Yönetici)" : "Ekip Üyesi"}
+                Kullanıcı
               </div>
             </div>
           </div>

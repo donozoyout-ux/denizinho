@@ -8,6 +8,13 @@ import type { User } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
+// Helper to decide if an email contains a task request based on keywords
+function isTaskRequest(subject: string | null, body: string): boolean {
+  const keywords = ["görev", "task", "assign", "yap", "tamamla", "todo"]; // lower‑case
+  const text = `${subject ?? ""} ${body}`.toLowerCase();
+  return keywords.some((kw) => text.includes(kw));
+}
+
 function verifyWebhookKey(request: Request): boolean {
   const url = new URL(request.url);
   const queryKey = url.searchParams.get("key");
@@ -76,8 +83,7 @@ async function handleSync(request: Request) {
     typedUsers.map((u) => [u.email.toLowerCase(), u])
   );
 
-  const patron = typedUsers.find((u) => u.role === "patron") ?? typedUsers[0] ?? null;
-  const createdBy = patron?.id ?? null;
+
 
   const client = new ImapFlow({
     host: imapHost,
@@ -101,12 +107,17 @@ async function handleSync(request: Request) {
     
     try {
       // Fetch unseen messages
+      const uids = await client.search({ seen: false });
       const messages: ImapMessage[] = [];
-      for await (const msg of client.fetch({ unseen: true }, { source: true })) {
-        messages.push({
-          uid: msg.uid,
-          source: msg.source,
-        });
+      if (uids && uids.length > 0) {
+        for await (const msg of client.fetch(uids, { source: true })) {
+          if (msg.source) {
+            messages.push({
+              uid: msg.uid,
+              source: msg.source,
+            });
+          }
+        }
       }
 
       for (const msg of messages) {
@@ -119,8 +130,9 @@ async function handleSync(request: Request) {
         if (parsed.from && parsed.from.value && parsed.from.value[0]) {
           senderEmail = parsed.from.value[0].address || "";
         } else if (parsed.from && typeof parsed.from === "string") {
-          const match = parsed.from.match(/<([^>]+)>/);
-          senderEmail = match ? match[1] : parsed.from;
+          const fromStr = parsed.from as string;
+          const match = fromStr.match(/<([^>]+)>/);
+          senderEmail = match ? match[1] : fromStr;
         }
         senderEmail = senderEmail.trim().toLowerCase();
 
@@ -132,7 +144,11 @@ async function handleSync(request: Request) {
         const senderUser = emailToUser.get(senderEmail);
 
         if (senderUser) {
-          // A. REGISTERED SENDER: Parse and create tasks directly
+          // A. REGISTERED SENDER: Only process if email is a task request
+          if (!isTaskRequest(subject, emailBody)) {
+            // Not a task email – skip processing for registered sender
+            continue;
+          }
           const parsedTasks = parseTasksFromText(emailBody);
           const tasksToInsert =
             parsedTasks.length > 0
@@ -146,7 +162,7 @@ async function handleSync(request: Request) {
               ? emailToUser.get(item.ilgili_eposta.toLowerCase())?.id ?? senderUser.id
               : senderUser.id,
             status: "todo" as const,
-            created_by: createdBy,
+            created_by: senderUser.id,
           }));
 
           const { data: inserted, error: insertError } = await supabase
@@ -177,32 +193,57 @@ async function handleSync(request: Request) {
           }
         } else {
           // B. UNREGISTERED SENDER: Save as pending draft/incoming_request
-          const { data: insertedReq, error: reqError } = await supabase
-            .from("incoming_requests")
-            .insert({
-              subject,
-              body: emailBody,
-              sender_email: senderEmail,
-              status: "pending",
-            })
-            .select()
-            .single();
+          if (!isTaskRequest(subject, emailBody)) {
+            // Not a task email – store as pending request only
+            const { data: insertedReq, error: reqError } = await supabase
+              .from("incoming_requests")
+              .insert({
+                subject,
+                body: emailBody,
+                sender_email: senderEmail,
+                status: "pending",
+              })
+              .select()
+              .single();
+
+            if (reqError) {
+              console.error(`[Email Sync] Request insertion error (filtered): ${reqError.message}`);
+              results.push({ sender: senderEmail, type: "request", error: reqError.message });
+            } else {
+              processedCount++;
+              results.push({ sender: senderEmail, type: "request", id: insertedReq?.id });
+            }
+            // Skip task creation for this email
+            continue;
+          } else {
+            // B. UNREGISTERED SENDER: Save as pending draft/incoming_request (original behavior)
+            const { data: insertedReq, error: reqError } = await supabase
+              .from("incoming_requests")
+              .insert({
+                subject,
+                body: emailBody,
+                sender_email: senderEmail,
+                status: "pending",
+              })
+              .select()
+              .single();
 
           if (reqError) {
-            console.error(`[Email Sync] Request insertion error: ${reqError.message}`);
+            console.error(`[Email Sync] Request insertion error (filtered): ${reqError.message}`);
             results.push({ sender: senderEmail, type: "request", error: reqError.message });
           } else {
             processedCount++;
             results.push({ sender: senderEmail, type: "request", id: insertedReq?.id });
           }
         }
-
-        // Mark message as read
-        await client.messageFlagsAdd([msg.uid], ["\\Seen"], { uid: true });
       }
-    } finally {
-      lock.release();
+
+      // Mark message as read
+      await client.messageFlagsAdd([msg.uid], ["\\Seen"], { uid: true });
     }
+  } finally {
+    lock.release();
+  }
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err);
     console.error("[Email Sync] IMAP process error:", err);

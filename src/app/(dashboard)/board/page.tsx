@@ -54,7 +54,7 @@ export default async function BoardPage() {
       />
       <KanbanBoard
         initialTasks={(tasksRes.data as Task[]) ?? []}
-        userRole={user!.role}
+        user={user!}
         currentUserId={user!.id}
         teamMembers={(teamMembersRes.data as User[]) ?? []}
         projects={(projectsRes.data as Project[]) ?? []}

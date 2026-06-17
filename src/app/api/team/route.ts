@@ -1,23 +1,31 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isGroupAdmin } from "@/lib/auth";
 import { sendInviteEmail } from "@/lib/email/send-notification";
 import type { UserRole } from "@/types/database";
 import { randomUUID } from "crypto";
 
 export async function GET() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "patron") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("users")
-    .select("*")
-    .or(`id.eq.${user.id},invited_by.eq.${user.id}`)
-    .order("full_name");
+
+  // Yönetici: kendisi + davet ettikleri. Üye: kendi grubundakiler.
+  let query = supabase.from("users").select("*").order("full_name");
+
+  if (isGroupAdmin(user)) {
+    query = query.or(`id.eq.${user.id},invited_by.eq.${user.id}`);
+  } else if (user.invited_by) {
+    query = query.or(`id.eq.${user.invited_by},invited_by.eq.${user.invited_by}`);
+  } else {
+    query = query.eq("id", user.id);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -28,7 +36,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
-  if (!user || user.role !== "patron") {
+  if (!user || !isGroupAdmin(user)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -80,7 +88,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // 2. public.users'da yok → Doğrudan veritabanına ekle (kayıt olmasına gerek yok!)
+  // 2. public.users'da yok → Doğrudan veritabanına ekle
   const newUserId = randomUUID();
   const { error: insertError } = await client
     .from("users")
@@ -100,7 +108,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // 3. Davet/Bilgilendirme e-postası gönder (başarısız olursa üye eklemeyi engelleme)
+  // 3. Davet/Bilgilendirme e-postası gönder
   try {
     await sendInviteEmail({
       to: normalizedEmail,
@@ -120,7 +128,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   const user = await getCurrentUser();
-  if (!user || user.role !== "patron") {
+  if (!user || !isGroupAdmin(user)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

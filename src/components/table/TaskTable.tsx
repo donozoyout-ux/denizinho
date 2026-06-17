@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Task, UserRole } from "@/types/database";
+import type { Task, User } from "@/types/database";
+import { isGroupAdmin } from "@/lib/auth-client";
 import { TaskStatusBadge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import { Search, ArrowUpDown } from "lucide-react";
@@ -9,12 +10,12 @@ import { Input } from "@/components/ui/Input";
 
 interface TaskTableProps {
   tasks: Task[];
-  userRole: UserRole;
+  user: User;
 }
 
 type SortKey = "title" | "status" | "due_date" | "created_at";
 
-export function TaskTable({ tasks, userRole }: TaskTableProps) {
+export function TaskTable({ tasks, user }: TaskTableProps) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortAsc, setSortAsc] = useState(false);
@@ -146,7 +147,7 @@ export function TaskTable({ tasks, userRole }: TaskTableProps) {
 
       <p className="mt-3 text-xs text-gray-400">
         Toplam {filtered.length} görev gösteriliyor
-        {userRole !== "patron" && " (size atanan görevler)"}
+        {isGroupAdmin(user) && " (size atanan görevler)"}
       </p>
     </div>
   );

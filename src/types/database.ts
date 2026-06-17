@@ -1,3 +1,6 @@
+// "patron" DB değeri korunuyor (Supabase CHECK constraint uyumluluğu).
+// Uygulama içinde "patron" = grup yöneticisi anlamında kullanılır.
+// Herhangi bir kullanıcı grup oluşturabilir; oluşturan otomatik yönetici olur.
 export type UserRole = "patron" | "team_member";
 
 export type TaskStatus = "todo" | "in_progress" | "done";

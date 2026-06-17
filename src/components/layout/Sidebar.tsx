@@ -13,6 +13,7 @@ import {
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isGroupAdmin } from "@/lib/auth-client";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@/types/database";
 import { RoleBadge } from "@/components/ui/Badge";
@@ -42,7 +43,7 @@ export function Sidebar({ user }: SidebarProps) {
   };
 
   const filteredNav = navItems.filter(
-    (item) => !item.patronOnly || user.role === "patron"
+    (item) => !item.patronOnly || isGroupAdmin(user)
   );
 
   return (
@@ -88,7 +89,7 @@ export function Sidebar({ user }: SidebarProps) {
             {user.full_name || user.email}
           </p>
           <div className="mt-1">
-            <RoleBadge role={user.role} />
+            <RoleBadge isAdmin={isGroupAdmin(user)} />
           </div>
         </div>
         <button

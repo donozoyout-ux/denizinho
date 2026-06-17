@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isGroupAdmin } from "@/lib/auth";
 import { sendTaskAssignmentEmail } from "@/lib/email/send-notification";
 import type { TaskStatus } from "@/types/database";
 
@@ -27,13 +27,20 @@ export async function PATCH(
     return NextResponse.json({ error: "Task not found" }, { status: 404 });
   }
 
-  if (user.role !== "patron") {
+  const admin = isGroupAdmin(user);
+
+  // Yönetici veya görev oluşturucu her şeyi yapabilir
+  // Normal üye sadece kendine atanan görevin durumunu değiştirebilir
+  if (!admin && existing.created_by !== user.id) {
     if (existing.assigned_to !== user.id) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
-    if (body.status !== "done") {
+    // Üye sadece kendi görevinin durumunu güncelleyebilir
+    const allowedFields = ["status"];
+    const bodyKeys = Object.keys(body);
+    if (bodyKeys.some((k) => !allowedFields.includes(k))) {
       return NextResponse.json(
-        { error: "Team members can only mark tasks as done" },
+        { error: "Sadece görev durumunu güncelleyebilirsiniz" },
         { status: 403 }
       );
     }
@@ -57,8 +64,8 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Görev yeni birine atandıysa bildirim gönder
   if (
-    user.role === "patron" &&
     body.assigned_to &&
     body.assigned_to !== existing.assigned_to &&
     data.assignee?.email
@@ -82,11 +89,27 @@ export async function DELETE(
 ) {
   const { id } = await params;
   const user = await getCurrentUser();
-  if (!user || user.role !== "patron") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const supabase = await createClient();
+
+  // Görevi silen kişi ya yönetici ya da görevin oluşturucusu olmalı
+  const { data: existing } = await supabase
+    .from("tasks")
+    .select("created_by")
+    .eq("id", id)
+    .single();
+
+  if (!existing) {
+    return NextResponse.json({ error: "Task not found" }, { status: 404 });
+  }
+
+  if (!isGroupAdmin(user) && existing.created_by !== user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { error } = await supabase.from("tasks").delete().eq("id", id);
 
   if (error) {

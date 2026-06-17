@@ -1,7 +1,7 @@
 "use client";
 
 import { useDroppable } from "@dnd-kit/core";
-import type { Task, TaskStatus, User, UserRole } from "@/types/database";
+import type { Task, TaskStatus, User } from "@/types/database";
 import { TASK_STATUS_LABELS } from "@/types/database";
 import { TaskCard } from "./TaskCard";
 import { cn } from "@/lib/utils";
@@ -10,27 +10,27 @@ const columnColors: Record<TaskStatus, string> = {
   todo: "border-t-gray-300",
   in_progress: "border-t-tider-orange",
   done: "border-t-tider-green",
-};
-
-interface KanbanColumnProps {
-  status: TaskStatus;
-  tasks: Task[];
-  userRole: UserRole;
-  currentUserId: string;
-  teamMembers?: User[];
-  onEditTask?: (task: Task) => void;
-  onReassign?: (taskId: string, newAssigneeId: string) => void;
-}
-
-export function KanbanColumn({
-  status,
-  tasks,
-  userRole,
-  currentUserId,
-  teamMembers = [],
-  onEditTask,
-  onReassign,
-}: KanbanColumnProps) {
+ };
+ 
+ interface KanbanColumnProps {
+   status: TaskStatus;
+   tasks: Task[];
+   user: User;
+   currentUserId: string;
+   teamMembers?: User[];
+   onEditTask?: (task: Task) => void;
+   onReassign?: (taskId: string, newAssigneeId: string) => void;
+ }
+ 
+ export function KanbanColumn({
+   status,
+   tasks,
+   user,
+   currentUserId,
+   teamMembers = [],
+   onEditTask,
+   onReassign,
+ }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
@@ -57,7 +57,7 @@ export function KanbanColumn({
           <TaskCard
             key={task.id}
             task={task}
-            userRole={userRole}
+            user={user}
             currentUserId={currentUserId}
             teamMembers={teamMembers}
             onEdit={onEditTask}

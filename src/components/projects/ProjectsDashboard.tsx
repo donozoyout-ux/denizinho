@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { isGroupAdmin } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import type { Project, ProjectStatus, Task, User } from "@/types/database";
 import { Button } from "@/components/ui/Button";
@@ -41,7 +42,7 @@ export function ProjectsDashboard({
   const [createLoading, setCreateLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const isPatron = user.role === "patron";
+  const isAdmin = isGroupAdmin(user);
 
   // Calculate project statistics (tasks completed vs total)
   const getProjectStats = (projectId: string) => {
@@ -159,7 +160,7 @@ export function ProjectsDashboard({
             Toplam <strong>{projects.length}</strong> Proje tanımlı
           </span>
         </div>
-        {isPatron && (
+        {isAdmin && (
           <Button onClick={() => setModalOpen(true)} className="flex items-center gap-2">
             <FolderPlus className="h-4 w-4" />
             Yeni Proje Ekle
@@ -210,7 +211,7 @@ export function ProjectsDashboard({
                             <h4 className="font-semibold text-gray-900 group-hover:text-tider-green transition-colors">
                               {project.title}
                             </h4>
-                            {isPatron && (
+                            {isAdmin && (
                               <button
                                 onClick={() => handleDeleteProject(project.id)}
                                 disabled={isLoading}
@@ -254,7 +255,7 @@ export function ProjectsDashboard({
                           </button>
 
                           {/* Status transition buttons (Patron only) */}
-                          {isPatron && (
+                          {isAdmin && (
                             <div className="flex items-center gap-1">
                               {project.status === "todo" && (
                                 <button

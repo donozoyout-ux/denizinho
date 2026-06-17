@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isGroupAdmin } from "@/lib/auth";
 import { sendTaskAssignmentEmail } from "@/lib/email/send-notification";
 
 export async function GET() {
@@ -16,7 +16,8 @@ export async function GET() {
     .select("*, assignee:users!tasks_assigned_to_fkey(id, email, full_name, role, telegram_chat_id)")
     .order("created_at", { ascending: false });
 
-  if (user.role !== "patron") {
+  // Yönetici tüm görevleri görür, üye sadece kendine atananları
+  if (!isGroupAdmin(user)) {
     query = query.eq("assigned_to", user.id);
   }
 
@@ -31,10 +32,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
-  if (!user || user.role !== "patron") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Herkes görev oluşturabilir (grup içinde birbirine atayabilir)
   const body = await request.json();
   const supabase = await createClient();
 

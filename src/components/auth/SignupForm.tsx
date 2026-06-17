@@ -131,20 +131,7 @@ export function SignupForm() {
           autoComplete="new-password"
         />
 
-        <div className="space-y-1">
-          <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-            Sistem Rolü
-          </label>
-          <select
-            id="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as "patron" | "team_member")}
-            className="block w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 focus:border-tider-green focus:outline-none focus:ring-1 focus:ring-tider-green"
-          >
-            <option value="team_member">Ekip Üyesi (Giriş yapıp kendisine atanan görevleri görür)</option>
-            <option value="patron">Patron (Görev oluşturur, ekibi ve tüm süreci yönetir)</option>
-          </select>
-        </div>
+
 
         {error && (
           <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">

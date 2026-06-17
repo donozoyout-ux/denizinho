@@ -10,13 +10,14 @@ import {
   ChevronDown,
   Check,
 } from "lucide-react";
-import type { Task, User, UserRole } from "@/types/database";
+import type { Task, User } from "@/types/database";
+import { isGroupAdmin } from "@/lib/auth-client";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 interface TaskCardProps {
   task: Task;
-  userRole: UserRole;
+  user: User;
   currentUserId: string;
   teamMembers?: User[];
   onEdit?: (task: Task) => void;
@@ -25,7 +26,7 @@ interface TaskCardProps {
 
 export function TaskCard({
   task,
-  userRole,
+  user,
   currentUserId,
   teamMembers = [],
   onEdit,
@@ -34,7 +35,7 @@ export function TaskCard({
   const [showAssignDropdown, setShowAssignDropdown] = useState(false);
 
   const canDrag =
-    userRole === "patron" ||
+    isGroupAdmin(user) ||
     (task.assigned_to === currentUserId && task.status !== "done");
 
   const { attributes, listeners, setNodeRef, transform, isDragging } =
@@ -78,7 +79,7 @@ export function TaskCard({
         )}
         <div
           className="flex-1 min-w-0"
-          onClick={() => userRole === "patron" && onEdit?.(task)}
+          onClick={() => isGroupAdmin(user) && onEdit?.(task)}
         >
           <h4 className="text-sm font-semibold text-gray-900 truncate cursor-pointer">
             {task.title}
@@ -91,7 +92,7 @@ export function TaskCard({
           <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-400">
             {/* Assignee chip with inline reassign dropdown */}
             <div className="relative">
-              {userRole === "patron" && teamMembers.length > 0 ? (
+              {isGroupAdmin(user) && teamMembers.length > 0 ? (
                 <button
                   type="button"
                   onClick={(e) => {

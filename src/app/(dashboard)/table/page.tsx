@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isGroupAdmin } from "@/lib/auth";
 import { Header } from "@/components/layout/Header";
 import { TaskTable } from "@/components/table/TaskTable";
 import type { Task } from "@/types/database";
@@ -14,7 +14,7 @@ export default async function TablePage() {
     .select("*, assignee:users!tasks_assigned_to_fkey(id, email, full_name, role)")
     .order("created_at", { ascending: false });
 
-  if (user?.role !== "patron") {
+  if (!user || !isGroupAdmin(user)) {
     query = query.eq("assigned_to", user!.id);
   }
 
@@ -26,7 +26,7 @@ export default async function TablePage() {
         title="Tablo Görünümü"
         description="Tüm görevlerin Excel benzeri liste görünümü"
       />
-      <TaskTable tasks={(tasks as Task[]) ?? []} userRole={user!.role} />
+      <TaskTable tasks={(tasks as Task[]) ?? []} user={user!} />
     </div>
   );
 }

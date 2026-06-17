@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import type { User, UserRole } from "@/types/database";
+import { isGroupAdmin } from "./auth-client";
 
 function userFromAuth(authUser: {
   id: string;
@@ -50,9 +51,13 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
   }
 });
 
+export { isGroupAdmin };
+
+/** @deprecated isGroupAdmin kullanın */
 export async function isPatron(): Promise<boolean> {
   const user = await getCurrentUser();
-  return user?.role === "patron";
+  if (!user) return false;
+  return isGroupAdmin(user);
 }
 
 export async function isDatabaseReady(): Promise<boolean> {

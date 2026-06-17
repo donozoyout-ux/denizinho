@@ -22,20 +22,18 @@ export function TaskStatusBadge({ status, className }: BadgeProps) {
 }
 
 interface RoleBadgeProps {
-  role: "patron" | "team_member";
+  isAdmin: boolean;
 }
 
-export function RoleBadge({ role }: RoleBadgeProps) {
+export function RoleBadge({ isAdmin }: RoleBadgeProps) {
   return (
     <span
       className={cn(
         "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-        role === "patron"
-          ? "bg-tider-orange-light text-tider-orange"
-          : "bg-tider-green-light text-tider-green"
+        "bg-tider-green-light text-tider-green"
       )}
     >
-      {role === "patron" ? "Patron" : "Ekip Üyesi"}
+      Kullanıcı
     </span>
   );
 }

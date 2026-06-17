@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isGroupAdmin } from "@/lib/auth";
 import { Header } from "@/components/layout/Header";
 import { TeamManagement } from "@/components/team/TeamManagement";
 import type { User } from "@/types/database";
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export default async function TeamPage() {
   const user = await getCurrentUser();
 
-  if (user?.role !== "patron") {
+  if (!user || !isGroupAdmin(user)) {
     redirect("/dashboard");
   }
 

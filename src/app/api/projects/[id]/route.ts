@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isGroupAdmin } from "@/lib/auth";
 
 export async function PATCH(
   request: Request,
@@ -8,12 +8,28 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const user = await getCurrentUser();
-  if (!user || user.role !== "patron") {
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const supabase = await createClient();
+
+  // Proje sahibi veya yönetici düzenleyebilir
+  const { data: existing } = await supabase
+    .from("projects")
+    .select("created_by")
+    .eq("id", id)
+    .single();
+
+  if (!existing) {
+    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
+
+  if (!isGroupAdmin(user) && existing.created_by !== user.id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await request.json();
-  const supabase = await createClient();
 
   const updateData: Record<string, unknown> = {};
   if (body.title !== undefined) updateData.title = body.title;
@@ -40,11 +56,26 @@ export async function DELETE(
 ) {
   const { id } = await params;
   const user = await getCurrentUser();
-  if (!user || user.role !== "patron") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("projects")
+    .select("created_by")
+    .eq("id", id)
+    .single();
+
+  if (!existing) {
+    return NextResponse.json({ error: "Project not found" }, { status: 404 });
+  }
+
+  if (!isGroupAdmin(user) && existing.created_by !== user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const { error } = await supabase.from("projects").delete().eq("id", id);
 
   if (error) {

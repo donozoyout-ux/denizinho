@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { User } from "@/types/database";
+import { isGroupAdmin } from "@/lib/auth-client";
 import { RoleBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -19,7 +20,7 @@ export function TeamMemberList({ members: initial, onRefresh }: TeamMemberListPr
   const [telegramInputVal, setTelegramInputVal] = useState("");
 
   const toggleRole = async (member: User) => {
-    const newRole = member.role === "patron" ? "team_member" : "patron";
+    const newRole = isGroupAdmin(member) ? "team_member" : "patron";
     setLoadingId(member.id);
 
     try {
@@ -102,12 +103,12 @@ export function TeamMemberList({ members: initial, onRefresh }: TeamMemberListPr
               <td className="px-6 py-4 font-medium text-gray-900">
                 <div className="font-semibold">{member.full_name || "—"}</div>
                 <div className="text-xs text-gray-400 font-normal mt-0.5">
-                  {member.role === "patron" ? "👑 Patron (Yönetici)" : "👤 Ekip Üyesi (Kullanıcı)"}
+                  Kullanıcı
                 </div>
               </td>
               <td className="px-6 py-4 text-gray-500">{member.email}</td>
               <td className="px-6 py-4">
-                <RoleBadge role={member.role} />
+                <RoleBadge isAdmin={isGroupAdmin(member)} />
               </td>
               <td className="px-6 py-4">
                 {editingTelegramId === member.id ? (
@@ -150,18 +151,6 @@ export function TeamMemberList({ members: initial, onRefresh }: TeamMemberListPr
                 )}
               </td>
               <td className="px-6 py-4">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => toggleRole(member)}
-                  loading={loadingId === member.id}
-                  disabled={editingTelegramId === member.id}
-                >
-                  <Shield className="h-3.5 w-3.5" />
-                  {member.role === "patron"
-                    ? "Ekip Üyesi Yap"
-                    : "Patron Yap"}
-                </Button>
               </td>
             </tr>
           ))}

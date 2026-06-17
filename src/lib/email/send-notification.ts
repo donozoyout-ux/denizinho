@@ -224,7 +224,7 @@ export async function sendInviteEmail(payload: {
     <div style="font-family: sans-serif; padding: 20px; color: #333; max-width: 600px; border: 1px solid #eee; border-radius: 8px;">
       <h2 style="color: #f57c00; margin-top: 0;">TIDER Görev Yönetimine Davet Edildiniz</h2>
       <p>Merhaba ${payload.fullName},</p>
-      <p><strong>${payload.invitedBy}</strong> sizi TIDER Görev Yönetim sistemine ekip üyesi olarak davet etti.</p>
+      <p><strong>${payload.invitedBy}</strong> sizi TIDER Görev Yönetim sistemine davet etti.</p>
       <p>Hesabınızı oluşturup size atanan görevleri görmek için aşağıdaki butona tıklayabilirsiniz:</p>
       <p style="margin-top: 25px;">
         <a href="${payload.signupUrl}" 

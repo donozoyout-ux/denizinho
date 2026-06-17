@@ -11,7 +11,7 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import type { Task, TaskStatus, User, UserRole, Project } from "@/types/database";
+import { isGroupAdmin } from "@/lib/auth-client";
 import { KanbanColumn } from "./KanbanColumn";
 import { TaskCard } from "./TaskCard";
 import {
@@ -20,12 +20,13 @@ import {
 } from "@/components/tasks/TaskFormModal";
 import { Button } from "@/components/ui/Button";
 import { Plus, ListFilter } from "lucide-react";
+import type { Task, User, Project, TaskStatus } from "@/types/database";
 
 const COLUMNS: TaskStatus[] = ["todo", "in_progress", "done"];
 
 interface KanbanBoardProps {
   initialTasks: Task[];
-  userRole: UserRole;
+  user: User;
   currentUserId: string;
   teamMembers: User[];
   projects: Project[];
@@ -33,7 +34,7 @@ interface KanbanBoardProps {
 
 export function KanbanBoard({
   initialTasks,
-  userRole,
+  user,
   currentUserId,
   teamMembers,
   projects,
@@ -65,11 +66,13 @@ export function KanbanBoard({
   const getTasksByStatus = (status: TaskStatus) =>
     filteredTasks.filter((t) => t.status === status);
 
-  const canMoveToStatus = (
+  
+
+const canMoveToStatus = (
     task: Task,
     newStatus: TaskStatus
   ): boolean => {
-    if (userRole === "patron") return true;
+    if (isGroupAdmin(user)) return true;
     if (task.assigned_to !== currentUserId) return false;
     return newStatus === "done";
   };
@@ -223,12 +226,12 @@ export function KanbanBoard({
             ))}
           </select>
         </div>
-        {userRole === "patron" && (
-          <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-1.5">
-            <Plus className="h-4 w-4" />
-            Yeni Görev
-          </Button>
-        )}
+        {isGroupAdmin(user) && (
+            <Button onClick={() => setShowCreateModal(true)} className="flex items-center gap-1.5">
+              <Plus className="h-4 w-4" />
+              Yeni Görev
+            </Button>
+          )}
       </div>
 
       <DndContext
@@ -243,11 +246,11 @@ export function KanbanBoard({
               key={status}
               status={status}
               tasks={getTasksByStatus(status)}
-              userRole={userRole}
+              user={user}
               currentUserId={currentUserId}
               teamMembers={teamMembers}
-              onEditTask={userRole === "patron" ? setEditingTask : undefined}
-              onReassign={userRole === "patron" ? handleReassign : undefined}
+              onEditTask={isGroupAdmin(user) ? setEditingTask : undefined}
+               onReassign={isGroupAdmin(user) ? handleReassign : undefined}
             />
           ))}
         </div>
@@ -257,7 +260,7 @@ export function KanbanBoard({
             <div className="rotate-2 opacity-90">
               <TaskCard
                 task={activeTask}
-                userRole={userRole}
+                user={user}
                 currentUserId={currentUserId}
               />
             </div>
