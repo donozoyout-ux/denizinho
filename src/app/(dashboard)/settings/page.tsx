@@ -3,6 +3,7 @@ import { Header } from "@/components/layout/Header";
 import { ProfileSettingsForm } from "@/components/profile/ProfileSettingsForm";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
 export default async function SettingsPage() {
   const user = await getCurrentUser();
 

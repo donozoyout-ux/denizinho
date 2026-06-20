@@ -1,11 +1,14 @@
 [build]
-  command = "npm install && npm run build"
+  command = "npm run build"
+
 
 [build.environment]
   NODE_VERSION = "22"
   NPM_FLAGS = "--legacy-peer-deps"
   NEXT_PUBLIC_APP_NAME = "EkipPlan"
   NEXT_PUBLIC_APP_TAGLINE = "Görevleri, ekipleri ve süreçleri tek yerde yönetin"
+  NEXT_PUBLIC_APP_URL = "https://gorevdagitimi.netlify.app"
+  NEXT_PUBLIC_SITE_URL = "https://gorevdagitimi.netlify.app"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"

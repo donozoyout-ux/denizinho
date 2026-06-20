@@ -7,6 +7,7 @@ import { TeamManagement } from "@/components/team/TeamManagement";
 import type { User } from "@/types/database";
 
 export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default async function TeamPage() {
   const user = await getCurrentUser();

@@ -6,6 +6,7 @@ import type { Task, User, Project } from "@/types/database";
 import { redirect } from "next/navigation";
 
 export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default async function BoardPage() {
   const user = await getCurrentUser();
