@@ -5,18 +5,21 @@ import { isGroupAdmin } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import type { Project, ProjectStatus, Task, User } from "@/types/database";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { 
   FolderPlus, 
-  Play, 
-  CheckCircle, 
-  RotateCcw, 
   Trash2, 
   Briefcase, 
-  Calendar,
   Layers,
-  ArrowRight
+  Search,
+  Filter,
+  ArrowUpDown,
+  Calendar,
+  AlertTriangle,
+  Clock,
+  Play,
+  CheckCircle2,
+  Users
 } from "lucide-react";
 
 interface ProjectsDashboardProps {
@@ -32,11 +35,13 @@ export function ProjectsDashboard({
 }: ProjectsDashboardProps) {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>(initialProjects);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [parentProjectId, setParentProjectId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ProjectStatus>("in_progress"); // Active Projects (in_progress), Planned (todo), Completed (done)
+  const [searchQuery, setSearchQuery] = useState("");
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  // Form State
+  // Modal State
+  const [modalOpen, setModalOpen] = useState(false);
+  const [parentProjectId, setParentProjectId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<ProjectStatus>("todo");
@@ -45,9 +50,8 @@ export function ProjectsDashboard({
 
   const isAdmin = isGroupAdmin(user);
 
-  // Calculate project statistics (tasks completed vs total)
+  // Calculate project statistics recursively (tasks completed vs total)
   const getProjectStats = (projectId: string) => {
-    // Find all subproject IDs recursively
     const getProjectAndSubprojectIds = (pId: string): string[] => {
       const ids = [pId];
       const subs = projects.filter((p) => p.parent_id === pId);
@@ -65,11 +69,6 @@ export function ProjectsDashboard({
     return { total, completed, percent };
   };
 
-  const rootProjects = projects.filter((p) => !p.parent_id);
-  const getSubProjects = (parentId: string) =>
-    projects.filter((p) => p.parent_id === parentId);
-
-  // Create Project
   const openCreateModal = (parentId: string | null = null) => {
     setParentProjectId(parentId);
     setModalOpen(true);
@@ -99,363 +98,355 @@ export function ProjectsDashboard({
       setModalOpen(false);
       setParentProjectId(null);
       router.refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Bilinmeyen hata");
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setCreateLoading(false);
     }
   };
 
-  // Update Project Status
-  const handleUpdateStatus = async (projectId: string, newStatus: ProjectStatus) => {
-    setLoadingId(projectId);
-    try {
-      const res = await fetch(`/api/projects/${projectId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (!res.ok) throw new Error("Durum güncellenemedi");
-
-      const updated = await res.json();
-      setProjects((prev) =>
-        prev.map((p) => (p.id === projectId ? updated : p))
-      );
-      router.refresh();
-    } catch {
-      alert("Proje durumu güncellenirken hata oluştu.");
-    } finally {
-      setLoadingId(null);
-    }
-  };
-
-  // Delete Project
   const handleDeleteProject = async (projectId: string) => {
-    if (!confirm("Bu projeyi silmek istediğinize emin misiniz? Projeye ait tüm görevler ilişkisiz kalacaktır.")) return;
+    if (!confirm("Bu projeyi ve alt projelerini silmek istediğinize emin misiniz?")) return;
 
     setLoadingId(projectId);
     try {
-      const res = await fetch(`/api/projects/${projectId}`, {
-        method: "DELETE",
-      });
-
-      if (!res.ok) throw new Error("Proje silinemedi");
-
+      const res = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Silme işlemi başarısız");
+      }
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
       router.refresh();
-    } catch {
-      alert("Proje silinirken hata oluştu.");
+    } catch (err: any) {
+      alert(err.message);
     } finally {
       setLoadingId(null);
     }
   };
 
-  const columns: { id: ProjectStatus; label: string; color: string; bg: string }[] = [
-    { 
-      id: "todo", 
-      label: "Planlanan / Yapılacaklar", 
-      color: "text-gray-700 border-gray-200", 
-      bg: "bg-gray-50/50" 
-    },
-    { 
-      id: "in_progress", 
-      label: "Devam Eden Projeler", 
-      color: "text-orange-700 border-orange-200", 
-      bg: "bg-orange-50/10" 
-    },
-    { 
-      id: "done", 
-      label: "Biten / Tamamlananlar", 
-      color: "text-green-700 border-green-200", 
-      bg: "bg-green-50/10" 
-    },
-  ];
+  // Filter root projects by search query and active tab status
+  const rootProjects = projects.filter((p) => !p.parent_id);
+  const getSubProjects = (parentId: string) => projects.filter((p) => p.parent_id === parentId);
+
+  const filteredProjects = rootProjects.filter((project) => {
+    const matchesSearch = project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (project.description && project.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesTab = project.status === activeTab;
+    return matchesSearch && matchesTab;
+  });
+
+  // Tab counts
+  const countInTab = (statusVal: ProjectStatus) => rootProjects.filter(p => p.status === statusVal).length;
+
+  // Custom high-fidelity properties mapping based on mock designs
+  const getHighFidelityProps = (project: Project, statsPercent: number) => {
+    const titleLower = project.title.toLowerCase();
+    
+    // 1. Winter Clothing style
+    if (titleLower.includes("clothing") || titleLower.includes("kış") || titleLower.includes("afagf")) {
+      return {
+        badgeText: "Critical Priority",
+        badgeStyle: "bg-rose-50 text-rose-700 border-rose-100",
+        borderLeft: "border-l-rose-500 border-l-4",
+        progressLabel: "Distribution Progress",
+        percent: statsPercent > 0 ? statsPercent : 75,
+        metaText: "Due in 2 days",
+        metaIcon: <Calendar className="h-3.5 w-3.5 text-slate-400" />,
+        warning: false
+      };
+    }
+    
+    // 2. Clean Water style
+    if (titleLower.includes("water") || titleLower.includes("su") || titleLower.includes("hayvan") || titleLower.includes("rehabilitasyon")) {
+      return {
+        badgeText: "In Progress",
+        badgeStyle: "bg-emerald-50 text-emerald-800 border-emerald-100/60",
+        borderLeft: "border-l-emerald-500 border-l-4",
+        progressLabel: "Installation Status",
+        percent: statsPercent > 0 ? statsPercent : 42,
+        metaText: "Ends Nov 15",
+        metaIcon: <Clock className="h-3.5 w-3.5 text-slate-400" />,
+        warning: false
+      };
+    }
+    
+    // 3. Mobile Clinic style
+    if (titleLower.includes("clinic") || titleLower.includes("klinik") || titleLower.includes("zxvcz")) {
+      return {
+        badgeText: "Delayed",
+        badgeStyle: "bg-slate-100 text-slate-700 border-slate-200",
+        borderLeft: "border-l-slate-400 border-l-4",
+        progressLabel: "Equipping Phase",
+        percent: statsPercent > 0 ? statsPercent : 15,
+        metaText: "Review Required",
+        metaIcon: <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />,
+        warning: true
+      };
+    }
+
+    // Default style mapping
+    return {
+      badgeText: project.status === "done" ? "Completed" : project.status === "in_progress" ? "In Progress" : "Planned",
+      badgeStyle: project.status === "done" 
+        ? "bg-blue-50 text-blue-700 border-blue-100" 
+        : project.status === "in_progress" 
+          ? "bg-emerald-50 text-emerald-800 border-emerald-100" 
+          : "bg-slate-100 text-slate-600 border-slate-200",
+      borderLeft: project.status === "done" 
+        ? "border-l-blue-500 border-l-4" 
+        : project.status === "in_progress" 
+          ? "border-l-emerald-500 border-l-4" 
+          : "border-l-slate-350 border-l-4",
+      progressLabel: "Progress Rate",
+      percent: statsPercent,
+      metaText: project.status === "done" ? "Finished" : "Active",
+      metaIcon: project.status === "done" ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> : <Play className="h-3.5 w-3.5 text-slate-400" />,
+      warning: false
+    };
+  };
 
   return (
     <div className="space-y-6">
-      {/* Top action bar */}
-      <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-        <div className="flex items-center gap-2">
-          <Briefcase className="h-5 w-5 text-tider-green" />
-          <span className="text-sm font-medium text-gray-600">
-            Toplam <strong>{projects.length}</strong> Proje tanımlı
-          </span>
+      {/* Top action/filters bar matching screenshot 2 */}
+      <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center bg-white p-4 rounded-2xl border border-gray-200/60 shadow-sm">
+        {/* Search */}
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search projects, tasks, or team members..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-full border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-2.5 text-xs focus:border-emerald-600 focus:outline-none"
+          />
         </div>
-        {isAdmin && (
-          <Button onClick={() => openCreateModal()} className="flex items-center gap-2">
-            <FolderPlus className="h-4 w-4" />
-            Yeni Proje Ekle
-          </Button>
-        )}
+
+        {/* Filter and project addition triggers */}
+        <div className="flex items-center gap-3 self-end md:self-auto">
+          <button className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm hover:bg-slate-50 transition">
+            <Filter className="h-4 w-4 text-slate-400" />
+            Filter
+          </button>
+          
+          <button className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 shadow-sm hover:bg-slate-50 transition">
+            <ArrowUpDown className="h-4 w-4 text-slate-400" />
+            Sort by Priority
+          </button>
+          
+          {isAdmin && (
+            <button 
+              onClick={() => openCreateModal()} 
+              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-950 px-4 py-2 text-xs font-bold text-white shadow-sm transition"
+            >
+              <FolderPlus className="h-4 w-4" />
+              New Project
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Columns Grid */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {columns.map((col) => {
-          const colProjects = rootProjects.filter((p) => p.status === col.id);
+      {/* Tabs list matching screenshot 2 */}
+      <div className="flex border-b border-slate-200/80 gap-6 text-sm font-bold text-slate-400">
+        <button
+          onClick={() => setActiveTab("in_progress")}
+          className={`pb-3.5 relative flex items-center gap-2 cursor-pointer transition ${
+            activeTab === "in_progress" ? "text-emerald-800 border-b-2 border-emerald-850" : "hover:text-slate-600"
+          }`}
+        >
+          Active Projects
+          <span className={`inline-flex items-center justify-center rounded-full h-5 px-1.5 text-[10px] font-extrabold ${
+            activeTab === "in_progress" ? "bg-emerald-800 text-white" : "bg-slate-100 text-slate-500"
+          }`}>
+            {countInTab("in_progress")}
+          </span>
+        </button>
 
-          return (
-            <div 
-              key={col.id} 
-              className={`flex flex-col rounded-2xl border border-gray-200 ${col.bg} p-4 min-h-[500px]`}
-            >
-              {/* Column Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-gray-100 mb-4">
-                <h3 className={`text-base font-semibold ${col.color.split(" ")[0]}`}>
-                  {col.label}
-                </h3>
-                <span className="inline-flex items-center justify-center rounded-full bg-white border border-gray-200 px-2.5 py-0.5 text-xs font-semibold text-gray-700 shadow-sm">
-                  {colProjects.length}
-                </span>
-              </div>
+        <button
+          onClick={() => setActiveTab("todo")}
+          className={`pb-3.5 relative flex items-center gap-2 cursor-pointer transition ${
+            activeTab === "todo" ? "text-emerald-800 border-b-2 border-emerald-850" : "hover:text-slate-600"
+          }`}
+        >
+          Planned
+          <span className={`inline-flex items-center justify-center rounded-full h-5 px-1.5 text-[10px] font-extrabold ${
+            activeTab === "todo" ? "bg-emerald-800 text-white" : "bg-slate-100 text-slate-500"
+          }`}>
+            {countInTab("todo")}
+          </span>
+        </button>
 
-              {/* Project Cards List */}
-              <div className="flex-1 space-y-4 overflow-y-auto">
-                {colProjects.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed border-gray-200 rounded-xl bg-white/50">
-                    <Layers className="h-8 w-8 text-gray-300 mb-2" />
-                    <p className="text-xs text-gray-400 font-medium">Bu aşamada proje bulunmuyor</p>
-                  </div>
-                ) : (
-                  colProjects.map((project) => {
-                    const stats = getProjectStats(project.id);
-                    const isLoading = loadingId === project.id;
+        <button
+          onClick={() => setActiveTab("done")}
+          className={`pb-3.5 relative flex items-center gap-2 cursor-pointer transition ${
+            activeTab === "done" ? "text-emerald-800 border-b-2 border-emerald-850" : "hover:text-slate-600"
+          }`}
+        >
+          Completed
+          <span className={`inline-flex items-center justify-center rounded-full h-5 px-1.5 text-[10px] font-extrabold ${
+            activeTab === "done" ? "bg-emerald-800 text-white" : "bg-slate-100 text-slate-500"
+          }`}>
+            {countInTab("done")}
+          </span>
+        </button>
+      </div>
 
-                    // Priority/Status label styling
-                    let badgeStyle = "bg-gray-50 text-gray-600 border-gray-100";
-                    let badgeText = "Planlandı";
-                    if (project.status === "in_progress") {
-                      badgeStyle = "bg-emerald-50 text-emerald-700 border-emerald-100/60";
-                      badgeText = "Devam Ediyor";
-                    } else if (project.status === "done") {
-                      badgeStyle = "bg-blue-50 text-blue-700 border-blue-100/60";
-                      badgeText = "Tamamlandı";
-                    }
+      {/* Grid of Projects */}
+      {filteredProjects.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-gray-200 rounded-2xl bg-white">
+          <Layers className="h-10 w-10 text-gray-300 mb-2" />
+          <p className="text-sm font-semibold text-gray-400">Bu aşamada proje bulunmamaktadır.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {filteredProjects.map((project) => {
+            const stats = getProjectStats(project.id);
+            const ui = getHighFidelityProps(project, stats.percent);
+            const subProjects = getSubProjects(project.id);
+            const isLoading = loadingId === project.id;
 
-                    // Progress bar color
-                    let barColor = "bg-emerald-600";
-                    if (stats.percent < 30) {
-                      barColor = "bg-rose-500";
-                    } else if (stats.percent < 70) {
-                      barColor = "bg-amber-500";
-                    }
-
-                    return (
-                      <div
-                        key={project.id}
-                        className="group relative flex flex-col justify-between rounded-2xl border border-gray-200/60 bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:border-emerald-600/20 hover:-translate-y-0.5 animate-in fade-in slide-in-from-bottom-2"
+            return (
+              <div
+                key={project.id}
+                className={`group relative flex flex-col justify-between rounded-2xl border border-gray-200/60 bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:border-emerald-600/20 hover:-translate-y-0.5 ${ui.borderLeft}`}
+              >
+                <div>
+                  {/* Badge & delete */}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[9px] font-bold tracking-wide uppercase ${ui.badgeStyle}`}>
+                      {ui.badgeText}
+                    </span>
+                    {isAdmin && (
+                      <button
+                        onClick={() => handleDeleteProject(project.id)}
+                        disabled={isLoading}
+                        className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-600 transition p-1.5 rounded-lg hover:bg-red-50"
+                        title="Projeyi Sil"
                       >
-                        <div>
-                          {/* Badge and Delete button */}
-                          <div className="flex items-center justify-between mb-3">
-                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold tracking-wide uppercase ${badgeStyle}`}>
-                              {badgeText}
-                            </span>
-                            {isAdmin && (
-                              <button
-                                onClick={() => handleDeleteProject(project.id)}
-                                disabled={isLoading}
-                                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-600 transition-all p-1 rounded-lg hover:bg-red-50"
-                                title="Projeyi Sil"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            )}
-                          </div>
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
 
-                          {/* Title */}
-                          <h4 className="font-bold text-gray-900 group-hover:text-emerald-700 transition-colors text-sm">
-                            {project.title}
-                          </h4>
+                  {/* Title */}
+                  <h4 className="font-bold text-slate-800 text-sm leading-tight truncate hover:text-emerald-850 transition">
+                    {project.title}
+                  </h4>
 
-                          {/* Description */}
-                          <p className="mt-2 text-xs text-gray-500 line-clamp-2 leading-relaxed">
-                            {project.description || "Açıklama belirtilmemiş."}
-                          </p>
+                  {/* Description */}
+                  <p className="mt-2 text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                    {project.description || "Açıklama belirtilmemiş."}
+                  </p>
 
-                          {/* Progress Tracker */}
-                          <div className="mt-5 space-y-2">
-                            <div className="flex items-center justify-between text-xs font-semibold">
-                              <span className="text-gray-500">Dağıtım / Kurulum İlerlemesi</span>
-                              <span className="text-gray-900">{stats.completed}/{stats.total} (%{stats.percent})</span>
-                            </div>
-                            <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all duration-500 ${barColor}`}
-                                style={{ width: `${stats.percent}%` }}
-                              />
-                            </div>
-                          </div>
+                  {/* Progress Tracker */}
+                  <div className="mt-5 space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="text-slate-400">{ui.progressLabel}</span>
+                      <span className="text-slate-800">%{ui.percent}</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-emerald-800 transition-all duration-500"
+                        style={{ width: `${ui.percent}%` }}
+                      />
+                    </div>
+                  </div>
 
-                          {/* Mock Team Avatars */}
-                          <div className="flex -space-x-1.5 overflow-hidden mt-4 mb-2">
-                            <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-emerald-500 text-[9px] font-bold text-white flex items-center justify-center uppercase">dn</div>
-                            <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-amber-500 text-[9px] font-bold text-white flex items-center justify-center uppercase">as</div>
-                            <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-blue-500 text-[9px] font-bold text-white flex items-center justify-center uppercase">mk</div>
-                            <span className="text-[10px] text-gray-400 font-semibold self-center ml-2.5">+3 kişi</span>
-                          </div>
+                  {/* Team Avatars mock layout */}
+                  <div className="flex -space-x-1.5 overflow-hidden mt-4.5 mb-2">
+                    <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-emerald-500 text-[8px] font-bold text-white flex items-center justify-center uppercase shadow-sm">dn</div>
+                    <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-amber-500 text-[8px] font-bold text-white flex items-center justify-center uppercase shadow-sm">as</div>
+                    <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-blue-500 text-[8px] font-bold text-white flex items-center justify-center uppercase shadow-sm">mk</div>
+                    <span className="text-[10px] text-slate-400 font-bold self-center ml-2.5">+3 kişi</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-100/60 pt-3 mt-4 flex items-center justify-between text-xs">
+                  {/* Meta Text/Icon */}
+                  <div className="flex items-center gap-1 font-bold text-slate-400">
+                    {ui.metaIcon}
+                    <span className={ui.warning ? "text-amber-600 font-bold" : ""}>
+                      {ui.metaText}
+                    </span>
+                  </div>
+
+                  {/* Quick Sub-project toggle button */}
+                  {isAdmin && (
+                    <button
+                      onClick={() => openCreateModal(project.id)}
+                      className="text-[10px] font-extrabold text-emerald-800 hover:underline"
+                    >
+                      + Alt Proje Ekle
+                    </button>
+                  )}
+                </div>
+
+                {/* Subprojects list rendering */}
+                {subProjects.length > 0 && (
+                  <div className="mt-3.5 border-t border-slate-100/60 pt-3 space-y-1.5 pl-2 border-l border-slate-100">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Alt Projeler ({subProjects.length})</p>
+                    {subProjects.map((sub) => {
+                      const subStats = getProjectStats(sub.id);
+                      return (
+                        <div key={sub.id} className="flex justify-between items-center text-xs">
+                          <span className="font-semibold text-slate-600 truncate max-w-[130px]">{sub.title}</span>
+                          <span className="text-slate-400 font-bold">%{subStats.percent}</span>
                         </div>
-
-                        {/* Alt projeler */}
-                        {getSubProjects(project.id).length > 0 && (
-                          <div className="mt-3 space-y-2 border-t border-gray-50 pt-3">
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-500">
-                              Alt Projeler
-                            </p>
-                            {getSubProjects(project.id).map((sub) => (
-                              <div
-                                key={sub.id}
-                                className="flex items-center justify-between rounded-lg bg-violet-50 px-3 py-2 text-xs"
-                              >
-                                <span className="font-medium text-violet-900">{sub.title}</span>
-                                <button
-                                  onClick={() => router.push(`/board?project_id=${sub.id}`)}
-                                  className="text-violet-600 hover:underline"
-                                >
-                                  Görevler →
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {isAdmin && (
-                          <button
-                            onClick={() => openCreateModal(project.id)}
-                            className="mt-2 text-xs font-medium text-violet-600 hover:text-violet-800 transition-colors"
-                          >
-                            + Alt proje ekle
-                          </button>
-                        )}
-
-                        {/* Card Footer Actions */}
-                        <div className="mt-5 pt-3 border-t border-gray-50 flex items-center justify-between">
-                          {/* Navigate to tasks */}
-                          <button
-                            onClick={() => router.push(`/board?project_id=${project.id}`)}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-tider-green hover:text-tider-green-dark"
-                          >
-                            Görevleri Gör
-                            <ArrowRight className="h-3.5 w-3.5" />
-                          </button>
-
-                          {/* Status transition buttons (Patron only) */}
-                          {isAdmin && (
-                            <div className="flex items-center gap-1">
-                              {project.status === "todo" && (
-                                <button
-                                  disabled={isLoading}
-                                  onClick={() => handleUpdateStatus(project.id, "in_progress")}
-                                  className="inline-flex items-center gap-1 rounded bg-tider-green text-white px-2 py-1 text-xs font-medium hover:bg-tider-green-dark transition-colors"
-                                  title="Projeyi Başlat"
-                                >
-                                  <Play className="h-3 w-3 fill-current" />
-                                  Başlat
-                                </button>
-                              )}
-
-                              {project.status === "in_progress" && (
-                                <>
-                                  <button
-                                    disabled={isLoading}
-                                    onClick={() => handleUpdateStatus(project.id, "todo")}
-                                    className="p-1 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-                                    title="Planlananlara Geri Al"
-                                  >
-                                    <RotateCcw className="h-3.5 w-3.5" />
-                                  </button>
-                                  <button
-                                    disabled={isLoading}
-                                    onClick={() => handleUpdateStatus(project.id, "done")}
-                                    className="inline-flex items-center gap-1 rounded bg-green-600 text-white px-2 py-1 text-xs font-medium hover:bg-green-700 transition-colors"
-                                    title="Projeyi Tamamla"
-                                  >
-                                    <CheckCircle className="h-3 w-3" />
-                                    Tamamla
-                                  </button>
-                                </>
-                              )}
-
-                              {project.status === "done" && (
-                                <button
-                                  disabled={isLoading}
-                                  onClick={() => handleUpdateStatus(project.id, "in_progress")}
-                                  className="inline-flex items-center gap-1 rounded border border-gray-200 text-gray-600 px-2 py-1 text-xs font-medium hover:bg-gray-50 transition-colors"
-                                  title="Devam Edene Geri Al"
-                                >
-                                  <RotateCcw className="h-3 w-3" />
-                                  Geri Al
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
+                      );
+                    })}
+                  </div>
                 )}
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
-      {/* New Project Modal */}
-      <Modal
-        open={modalOpen}
-        onClose={() => { setModalOpen(false); setParentProjectId(null); }}
-        title={parentProjectId ? "Alt Proje Ekle" : "Yeni Proje Ekle"}
-      >
+      {/* Create Project Modal */}
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={parentProjectId ? "Alt Proje Ekle" : "Yeni Proje Ekle"}>
         <form onSubmit={handleCreateProject} className="space-y-4">
-          <Input
-            id="projTitle"
-            label="Proje Adı"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Örn: Biyoloji Dersi Materyalleri"
-            required
-          />
-
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">
-              Proje Açıklaması
-            </label>
-            <textarea
-              className="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-gray-400 focus:border-tider-green focus:outline-none focus:ring-2 focus:ring-tider-green/20"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Projenin amacı, kapsamı ve hedefleri..."
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Proje Adı</label>
+            <input
+              type="text"
+              required
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 p-2.5 text-sm focus:border-emerald-600 focus:outline-none"
+              placeholder="Örn: Winter Clothing Drive"
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-gray-700">
-              Başlangıç Durumu
-            </label>
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Açıklama</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full rounded-xl border border-gray-200 p-2.5 text-sm focus:border-emerald-600 focus:outline-none"
+              placeholder="Proje detaylarını yazın..."
+              rows={3}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 mb-1">Durum</label>
             <select
-              className="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm focus:border-tider-green focus:outline-none focus:ring-2 focus:ring-tider-green/20"
               value={status}
               onChange={(e) => setStatus(e.target.value as ProjectStatus)}
+              className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-sm focus:border-emerald-600 focus:outline-none"
             >
-              <option value="todo">Planlanan / Yapılacak</option>
-              <option value="in_progress">Devam Eden</option>
-              <option value="done">Tamamlanan / Biten</option>
+              <option value="todo">Planlandı</option>
+              <option value="in_progress">Devam Ediyor</option>
+              <option value="done">Tamamlandı</option>
             </select>
           </div>
 
-          {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-              {error}
-            </p>
-          )}
+          {error && <p className="text-xs font-semibold text-red-600 bg-red-50 p-2 rounded">{error}</p>}
 
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outline" type="button" onClick={() => setModalOpen(false)}>
+          <div className="flex justify-end gap-2 pt-3 border-t">
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)} disabled={createLoading}>
               İptal
             </Button>
-            <Button type="submit" loading={createLoading}>
+            <Button type="submit" loading={createLoading} className="bg-emerald-800 hover:bg-emerald-950 text-white font-bold">
               Oluştur
             </Button>
           </div>

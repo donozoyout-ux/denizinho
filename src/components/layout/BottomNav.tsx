@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Kanban, Folder, Users } from "lucide-react";
+import { LayoutDashboard, Kanban, Folder, Users, HeartHandshake } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function BottomNav() {
@@ -10,9 +10,10 @@ export function BottomNav() {
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/board", label: "Görevler", icon: Kanban },
-    { href: "/projects", label: "Projeler", icon: Folder },
-    { href: "/team", label: "Ekip", icon: Users },
+    { href: "/board", label: "Tasks", icon: Kanban },
+    { href: "/projects", label: "Projects", icon: Folder },
+    { href: "/donors", label: "Donors", icon: HeartHandshake },
+    { href: "/team", label: "Team", icon: Users },
   ];
 
   return (

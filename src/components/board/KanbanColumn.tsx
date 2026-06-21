@@ -63,10 +63,17 @@ export function KanbanColumn({
       )}
     >
       <div className="flex items-center justify-between px-4 py-3.5">
-        <h3 className={cn("text-sm font-bold tracking-wide", style.header)}>
-          {TASK_STATUS_LABELS[status]}
-        </h3>
-        <span className="flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-gray-100/90 px-2 text-xs font-bold text-gray-600">
+        <div className="flex items-center gap-2">
+          <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", 
+            status === "todo" && "bg-slate-450",
+            status === "in_progress" && "bg-amber-500",
+            status === "done" && "bg-emerald-600"
+          )} />
+          <h3 className={cn("text-sm font-bold tracking-wide", style.header)}>
+            {TASK_STATUS_LABELS[status]}
+          </h3>
+        </div>
+        <span className="flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-slate-100 px-2 text-xs font-bold text-slate-600">
           {tasks.length}
         </span>
       </div>

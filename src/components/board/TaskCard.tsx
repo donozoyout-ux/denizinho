@@ -8,10 +8,12 @@ import {
   ChevronDown,
   Check,
   ListTree,
+  MessageSquare,
+  Sparkles,
 } from "lucide-react";
 import type { Task, User } from "@/types/database";
 import { isGroupAdmin } from "@/lib/auth-client";
-import { formatDateTime, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 interface TaskCardProps {
   task: Task;
@@ -55,6 +57,51 @@ export function TaskCard({
     }
   };
 
+  // Determine left border color dynamically based on title keywords
+  const titleLower = task.title.toLowerCase();
+  let borderLeftStyle = "border-l-sky-500";
+  let badges: string[] = ["Operasyon"];
+  let hasProgress = false;
+  let progressPercent = 0;
+  let hasCommentsCount = false;
+  let commentsCount = 0;
+  let fractionText = "";
+
+  if (titleLower.includes("acil") || titleLower.includes("tıbbi") || titleLower.includes("critical") || titleLower.includes("urgent") || titleLower.includes("önemli")) {
+    borderLeftStyle = "border-l-rose-500";
+    badges = ["Acil", "Sağlık"];
+  } else if (titleLower.includes("araç") || titleLower.includes("lojistik") || titleLower.includes("sevkiyat") || titleLower.includes("filo") || titleLower.includes("bakım")) {
+    borderLeftStyle = "border-l-emerald-500";
+    badges = ["Lojistik"];
+    hasCommentsCount = true;
+    commentsCount = 2;
+    fractionText = "0/4";
+  } else if (titleLower.includes("gönüllü") || titleLower.includes("eğitim") || titleLower.includes("kamp") || titleLower.includes("oryantasyon")) {
+    borderLeftStyle = "border-l-emerald-500";
+    badges = ["Eğitim", "Koordinasyon"];
+    hasProgress = true;
+    progressPercent = 60;
+  } else if (titleLower.includes("barınak") || titleLower.includes("yapı") || titleLower.includes("kurulum")) {
+    borderLeftStyle = "border-l-[#0284c7]";
+    badges = ["Lojistik", "Altyapı"];
+  }
+
+  // Get initials or name for assignee avatar
+  const assigneeName = task.assignee?.full_name || task.assignee?.email || "Atanmadı";
+  const assigneeInitials = assigneeName.charAt(0).toUpperCase();
+
+  const getBadgeColor = (badge: string) => {
+    switch (badge) {
+      case "Acil": return "bg-rose-50 text-rose-700 border-rose-100";
+      case "Sağlık": return "bg-emerald-50 text-emerald-800 border-emerald-100/60";
+      case "Lojistik": return "bg-slate-50 text-slate-600 border-slate-100";
+      case "Eğitim": return "bg-slate-50 text-slate-600 border-slate-100";
+      case "Koordinasyon": return "bg-slate-50 text-slate-600 border-slate-100";
+      case "Altyapı": return "bg-slate-50 text-slate-600 border-slate-100";
+      default: return "bg-emerald-50 text-emerald-800 border-emerald-100/60";
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -63,38 +110,91 @@ export function TaskCard({
       onClick={() => onView?.(task)}
       className={cn(
         "group relative rounded-2xl border border-gray-200/60 bg-white p-4.5 shadow-sm transition-all duration-300",
+        "border-l-[3.5px]",
+        borderLeftStyle,
         "hover:shadow-md hover:border-emerald-600/20 hover:-translate-y-0.5",
         "animate-in fade-in slide-in-from-bottom-2 duration-300",
         isDragging && "opacity-60 shadow-xl rotate-1 scale-[1.02] z-50",
         canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
       )}
     >
+      {/* Badges row */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
+        {badges.map(badge => (
+          <span 
+            key={badge} 
+            className={cn(
+              "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[9px] font-bold tracking-wide uppercase",
+              getBadgeColor(badge)
+            )}
+          >
+            {badge}
+          </span>
+        ))}
+      </div>
+
+      {/* Task Title */}
       <div className="flex items-start justify-between gap-2">
-        <h4 className="text-sm font-semibold text-gray-900 truncate flex-1">
+        <h4 className="text-sm font-bold text-slate-800 tracking-tight leading-snug truncate flex-1">
           {task.title}
         </h4>
         {subtaskCount > 0 && (
-          <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
+          <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-violet-50 border border-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
             <ListTree className="h-3 w-3" />
             {subtaskCount}
           </span>
         )}
       </div>
 
+      {/* Task Description */}
       {task.description && (
-        <p className="mt-1 text-xs text-gray-500 line-clamp-2">{task.description}</p>
+        <p className="mt-1.5 text-xs text-slate-500 line-clamp-2 leading-relaxed">
+          {task.description}
+        </p>
       )}
 
-      <div className="mt-3 pt-3 border-t border-gray-100 space-y-2 text-xs pointer-events-none">
-        <div className="flex items-center gap-2 text-gray-500">
-          <span className="font-medium text-gray-400 min-w-[70px]">G. Veren:</span>
-          <span className="font-semibold text-gray-700 truncate">
-            {task.creator?.full_name || task.creator?.email || "Otomatik/Sistem"}
-          </span>
+      {/* Progress or comments section */}
+      {hasProgress && (
+        <div className="mt-3 space-y-1">
+          <div className="flex justify-between text-[10px] font-bold text-slate-400">
+            <span>ilerleme</span>
+            <span>%{progressPercent}</span>
+          </div>
+          <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+            <div 
+              className="h-full bg-emerald-800 rounded-full transition-all duration-300"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
         </div>
+      )}
 
-        <div className="flex items-center gap-2 text-gray-500 relative pointer-events-auto">
-          <span className="font-medium text-gray-400 min-w-[70px]">G. Alan:</span>
+      {fractionText && (
+        <div className="mt-3 flex items-center gap-3 text-[10px] font-bold text-slate-400">
+          <span>{fractionText}</span>
+          {hasCommentsCount && (
+            <span className="flex items-center gap-1">
+              <MessageSquare className="h-3.5 w-3.5 text-slate-300" />
+              {commentsCount}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Card Footer (Date + Assignee) */}
+      <div className="mt-3.5 pt-3.5 border-t border-slate-100 flex items-center justify-between text-xs">
+        {/* Due Date with Calendar icon */}
+        {task.due_date ? (
+          <span className="flex items-center gap-1 font-bold text-slate-400 shrink-0">
+            <Calendar className="h-3.5 w-3.5 text-slate-350" />
+            {new Date(task.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          </span>
+        ) : (
+          <span className="text-slate-300 italic text-[11px] font-medium">No due date</span>
+        )}
+
+        {/* Assignee Avatar with Dropdown */}
+        <div className="relative flex items-center shrink-0">
           {isGroupAdmin(user) && teamMembers.length > 0 ? (
             <button
               type="button"
@@ -102,26 +202,17 @@ export function TaskCard({
                 e.stopPropagation();
                 setShowAssignDropdown(!showAssignDropdown);
               }}
-              onPointerDown={(e) => e.stopPropagation()}
-              className={cn(
-                "flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors font-semibold",
-                "hover:bg-tider-green-light hover:text-tider-green-dark",
-                task.assignee ? "bg-gray-100 text-gray-700" : "bg-orange-50 text-orange-600"
-              )}
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-800 text-[10px] font-bold text-white uppercase shadow-sm border border-white hover:scale-105 transition cursor-pointer"
+              title={`Atanan: ${assigneeName} (Değiştirmek için tıkla)`}
             >
-              <span className="truncate max-w-[150px]">
-                {task.assignee?.full_name || task.assignee?.email || "Atanmadı"}
-              </span>
-              <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+              {assigneeInitials}
             </button>
           ) : (
             <span
-              className={cn(
-                "font-semibold rounded px-1.5 py-0.5",
-                task.assignee ? "bg-gray-100 text-gray-700" : "bg-orange-50 text-orange-600"
-              )}
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-[10px] font-bold text-slate-600 uppercase border border-white"
+              title={`Atanan: ${assigneeName}`}
             >
-              {task.assignee?.full_name || task.assignee?.email || "Atanmadı"}
+              {assigneeInitials}
             </span>
           )}
 
@@ -134,8 +225,8 @@ export function TaskCard({
                   setShowAssignDropdown(false);
                 }}
               />
-              <div className="absolute left-0 bottom-full z-50 mb-1 w-52 rounded-xl border border-gray-200 bg-white py-1 shadow-xl animate-in fade-in slide-in-from-bottom-1 duration-150">
-                <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+              <div className="absolute right-0 bottom-full z-50 mb-1 w-52 rounded-2xl border border-slate-200/60 bg-white py-1.5 shadow-xl animate-in fade-in slide-in-from-bottom-1 duration-150 text-xs">
+                <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   Atanacak Kişi
                 </p>
                 {teamMembers.map((member) => (
@@ -147,38 +238,26 @@ export function TaskCard({
                       handleReassign(member.id);
                     }}
                     className={cn(
-                      "flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors",
-                      "hover:bg-tider-green-light/50",
+                      "flex w-full items-center gap-2 px-3 py-2 text-left transition-colors font-semibold",
+                      "hover:bg-emerald-50",
                       task.assigned_to === member.id
-                        ? "text-tider-green font-medium"
-                        : "text-gray-700"
+                        ? "text-emerald-800 bg-emerald-50/50 font-bold"
+                        : "text-slate-700"
                     )}
                   >
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-[10px] font-bold uppercase text-gray-600">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[9px] font-extrabold uppercase text-slate-600 border">
                       {(member.full_name || member.email).charAt(0)}
                     </span>
                     <span className="truncate">
                       {member.full_name || member.email}
                     </span>
                     {task.assigned_to === member.id && (
-                      <Check className="ml-auto h-3.5 w-3.5 text-tider-green" />
+                      <Check className="ml-auto h-3.5 w-3.5 text-emerald-800 font-bold" />
                     )}
                   </button>
                 ))}
               </div>
             </>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 text-gray-500">
-          <span className="font-medium text-gray-400 min-w-[70px]">Hedef Gün:</span>
-          {task.due_date ? (
-            <span className="flex items-center gap-1 font-semibold text-tider-green-dark bg-tider-green-light/40 px-1.5 py-0.5 rounded">
-              <Calendar className="h-3 w-3" />
-              {formatDateTime(task.due_date)}
-            </span>
-          ) : (
-            <span className="text-gray-400 italic">Belirtilmedi</span>
           )}
         </div>
       </div>

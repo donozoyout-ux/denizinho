@@ -1,0 +1,102 @@
+[
+  {
+    "id": "donor-1",
+    "name": "Ahmet Yılmaz",
+    "type": "Bireysel",
+    "email": "ahmet.yilmaz@gmail.com",
+    "phone": "+90 532 123 45 67",
+    "address": "Kadıköy, İstanbul",
+    "status": "Aktif",
+    "last_contact": "2023-10-12",
+    "total_donated": 12500,
+    "donations": [
+      {
+        "id": "don-1-1",
+        "type": "Para",
+        "amount": 12500,
+        "details": "₺12,500 Nakdi Bağış",
+        "date": "2023-10-12"
+      }
+    ]
+  },
+  {
+    "id": "donor-2",
+    "name": "TechNova A.Ş.",
+    "type": "Kurumsal",
+    "email": "info@technova.com.tr",
+    "phone": "+90 216 444 0 222",
+    "address": "Ataşehir, İstanbul",
+    "status": "Aktif",
+    "last_contact": "2023-10-05",
+    "total_donated": 150000,
+    "donations": [
+      {
+        "id": "don-2-1",
+        "type": "Ürün",
+        "amount": 150000,
+        "details": "50 Adet Dizüstü Bilgisayar (Eğitim Desteği)",
+        "date": "2023-10-05"
+      }
+    ]
+  },
+  {
+    "id": "donor-3",
+    "name": "Zeynep Çelik",
+    "type": "Bireysel",
+    "email": "zeynep.celik@yahoo.com",
+    "phone": "+90 544 987 65 43",
+    "address": "Çankaya, Ankara",
+    "status": "Pasif",
+    "last_contact": "2023-08-18",
+    "total_donated": 4200,
+    "donations": [
+      {
+        "id": "don-3-1",
+        "type": "Para",
+        "amount": 4200,
+        "details": "₺4,200 Afet Bölgesi Nakdi Yardım",
+        "date": "2023-08-18"
+      }
+    ]
+  },
+  {
+    "id": "donor-4",
+    "name": "Global Lojistik",
+    "type": "Kurumsal",
+    "email": "lojistik@global.com",
+    "phone": "+90 212 555 12 34",
+    "address": "Hadımköy, İstanbul",
+    "status": "Aktif",
+    "last_contact": "2023-10-01",
+    "total_donated": 75000,
+    "donations": [
+      {
+        "id": "don-4-1",
+        "type": "Hizmet",
+        "amount": 75000,
+        "details": "Nakliye ve Sevkiyat Desteği (10 Tır)",
+        "date": "2023-10-01"
+      }
+    ]
+  },
+  {
+    "id": "donor-5",
+    "name": "Kızılay Yardımsever",
+    "type": "Bireysel",
+    "email": "yardimsever@gmail.com",
+    "phone": "+90 535 333 44 55",
+    "address": "Nilüfer, Bursa",
+    "status": "Aktif",
+    "last_contact": "2023-10-15",
+    "total_donated": 20000,
+    "donations": [
+      {
+        "id": "don-5-1",
+        "type": "Ürün",
+        "amount": 20000,
+        "details": "100 Kutu Kuru Gıda Paketi",
+        "date": "2023-10-15"
+      }
+    ]
+  }
+]

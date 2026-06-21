@@ -12,6 +12,10 @@ import {
   PlusCircle,
   ChevronRight,
   BarChart3,
+  HeartHandshake,
+  Settings,
+  HelpCircle,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isGroupAdmin } from "@/lib/auth-client";
@@ -42,27 +46,30 @@ export function Sidebar({ user }: SidebarProps) {
   const navItems = user.group_id
     ? [
         { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { href: "/board", label: "Görev Panosu", icon: Kanban },
-        { href: "/projects", label: "Projeler", icon: Folder },
-        { href: "/team", label: "Ekip Yönetimi", icon: Users },
-        { href: "/reports", label: "Raporlar", icon: BarChart3 },
+        { href: "/board", label: "Tasks", icon: Kanban },
+        { href: "/projects", label: "Projects", icon: Folder },
+        { href: "/team", label: "Team", icon: Users },
+        { href: "/donors", label: "Donors", icon: HeartHandshake },
+        { href: "/reports", label: "Reports", icon: BarChart3 },
       ]
     : [{ href: "/group-setup", label: "Grup Oluştur", icon: PlusCircle }];
 
   return (
     <>
-      <aside className="fixed left-0 top-0 z-40 hidden md:flex h-screen w-[var(--sidebar-width)] flex-col border-r border-gray-200 bg-gradient-to-b from-white to-slate-50">
-        <div className="flex items-center gap-3 border-b border-gray-100 px-6 py-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-tider-green to-emerald-600 shadow-md shadow-green-200/50">
+      <aside className="fixed left-0 top-0 z-40 hidden md:flex h-screen w-[var(--sidebar-width)] flex-col border-r border-slate-200/80 bg-[#f8fafc]">
+        {/* Logo and Brand */}
+        <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-800 shadow-md shadow-emerald-950/20">
             <Leaf className="h-5 w-5 text-white" />
           </div>
-          <div>
-            <h1 className="text-base font-bold text-gray-900">{APP_NAME}</h1>
-            <p className="text-xs text-gray-500">{APP_TAGLINE}</p>
+          <div className="min-w-0">
+            <h1 className="text-base font-extrabold text-slate-800 tracking-tight leading-tight">{APP_NAME}</h1>
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{APP_TAGLINE}</p>
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 px-3 py-4">
+        {/* Navigation list */}
+        <nav className="flex-1 space-y-1.5 px-4 py-6">
           {navItems.map((item) => {
             const isActive =
               pathname === item.href ||
@@ -74,45 +81,62 @@ export function Sidebar({ user }: SidebarProps) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                  "flex items-center gap-3 rounded-full py-2.5 px-4 text-[13px] font-bold tracking-wide transition-all duration-300",
                   isActive
-                    ? "bg-gradient-to-r from-tider-green-light to-emerald-50 text-tider-green-dark shadow-sm"
-                    : "text-gray-600 hover:bg-white hover:text-gray-900 hover:shadow-sm hover:translate-x-0.5"
+                    ? "bg-[#a7f3d0] text-[#064e3b] shadow-sm shadow-emerald-100"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 )}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className="h-4.5 w-4.5 shrink-0" />
                 {item.label}
               </Link>
             );
           })}
         </nav>
 
-        <div className="border-t border-gray-100 p-4">
-          <button
-            type="button"
-            onClick={() => setProfileOpen(true)}
-            className="mb-3 flex w-full items-center gap-3 rounded-xl bg-white px-3 py-2.5 text-left shadow-sm border border-gray-100 transition-all hover:border-tider-green/30 hover:shadow-md group"
-          >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-tider-green to-emerald-600 text-sm font-bold text-white">
-              {(user.full_name || user.email).charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-gray-900">
-                {user.full_name || user.email}
-              </p>
-              <div className="mt-0.5">
-                <RoleBadge isAdmin={isGroupAdmin(user)} />
-              </div>
-            </div>
-            <ChevronRight className="h-4 w-4 text-gray-400 group-hover:text-tider-green transition-colors" />
-          </button>
-          <button
-            onClick={handleLogout}
-            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600"
-          >
-            <LogOut className="h-4 w-4" />
-            Çıkış Yap
-          </button>
+        {/* Sidebar Footer Actions */}
+        <div className="p-4 space-y-4">
+          {/* New Project Action Button */}
+          {user.group_id && (
+            <button
+              onClick={() => router.push("/projects")}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 py-3 px-4 text-xs font-bold text-white shadow-sm transition-all duration-300"
+            >
+              <Plus className="h-4 w-4" />
+              New Project
+            </button>
+          )}
+
+          <div className="border-t border-slate-200/60 pt-3 space-y-1">
+            {/* Settings button */}
+            <button
+              type="button"
+              onClick={() => setProfileOpen(true)}
+              className="flex w-full items-center gap-3 rounded-xl py-2 px-4 text-left text-[13px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+            >
+              <Settings className="h-4.5 w-4.5 text-slate-400" />
+              Settings
+            </button>
+
+            {/* Help button */}
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard")}
+              className="flex w-full items-center gap-3 rounded-xl py-2 px-4 text-left text-[13px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+            >
+              <HelpCircle className="h-4.5 w-4.5 text-slate-400" />
+              Help
+            </button>
+
+            {/* Logout button */}
+            <button
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-xl py-2 px-4 text-left text-[13px] font-semibold text-red-500 hover:bg-red-50 transition-colors"
+            >
+              <LogOut className="h-4.5 w-4.5 text-red-400" />
+              Logout
+            </button>
+          </div>
         </div>
       </aside>
 
