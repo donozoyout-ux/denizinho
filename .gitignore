@@ -46,3 +46,12 @@ next-env.d.ts
 # scratch / utility files
 check-db.js
 deno.lock
+tailwindcss-*.log
+extracted_zip/
+build_request.json
+deploy_debug.txt
+netlify-status.json
+stitch_sosyal_yard_m_i_y_netimi.zip
+temp-netlify-data.json
+tmp_netlify_builds.py
+tmp_netlify_probe.py

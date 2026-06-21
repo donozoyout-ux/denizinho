@@ -29,4 +29,4 @@ jobs:
         run: npx netlify-cli deploy --prod
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: b9ee6fb5-fe8d-470f-9caa-eb500e9e0bc2
+          NETLIFY_SITE_ID: 12f28850-fcd0-4ca3-b29c-11e345330bf3
