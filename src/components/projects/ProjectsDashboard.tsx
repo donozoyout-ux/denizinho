@@ -47,7 +47,18 @@ export function ProjectsDashboard({
 
   // Calculate project statistics (tasks completed vs total)
   const getProjectStats = (projectId: string) => {
-    const projectTasks = allTasks.filter((t) => t.project_id === projectId);
+    // Find all subproject IDs recursively
+    const getProjectAndSubprojectIds = (pId: string): string[] => {
+      const ids = [pId];
+      const subs = projects.filter((p) => p.parent_id === pId);
+      for (const sub of subs) {
+        ids.push(...getProjectAndSubprojectIds(sub.id));
+      }
+      return ids;
+    };
+
+    const targetIds = getProjectAndSubprojectIds(projectId);
+    const projectTasks = allTasks.filter((t) => t.project_id && targetIds.includes(t.project_id));
     const total = projectTasks.length;
     const completed = projectTasks.filter((t) => t.status === "done").length;
     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -211,22 +222,41 @@ export function ProjectsDashboard({
                     const stats = getProjectStats(project.id);
                     const isLoading = loadingId === project.id;
 
+                    // Priority/Status label styling
+                    let badgeStyle = "bg-gray-50 text-gray-600 border-gray-100";
+                    let badgeText = "Planlandı";
+                    if (project.status === "in_progress") {
+                      badgeStyle = "bg-emerald-50 text-emerald-700 border-emerald-100/60";
+                      badgeText = "Devam Ediyor";
+                    } else if (project.status === "done") {
+                      badgeStyle = "bg-blue-50 text-blue-700 border-blue-100/60";
+                      badgeText = "Tamamlandı";
+                    }
+
+                    // Progress bar color
+                    let barColor = "bg-emerald-600";
+                    if (stats.percent < 30) {
+                      barColor = "bg-rose-500";
+                    } else if (stats.percent < 70) {
+                      barColor = "bg-amber-500";
+                    }
+
                     return (
                       <div
                         key={project.id}
-                        className="group relative flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-tider-green/30 hover:-translate-y-0.5 animate-in fade-in slide-in-from-bottom-2"
+                        className="group relative flex flex-col justify-between rounded-2xl border border-gray-200/60 bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:border-emerald-600/20 hover:-translate-y-0.5 animate-in fade-in slide-in-from-bottom-2"
                       >
                         <div>
-                          {/* Title */}
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-semibold text-gray-900 group-hover:text-tider-green transition-colors">
-                              {project.title}
-                            </h4>
+                          {/* Badge and Delete button */}
+                          <div className="flex items-center justify-between mb-3">
+                            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[10px] font-bold tracking-wide uppercase ${badgeStyle}`}>
+                              {badgeText}
+                            </span>
                             {isAdmin && (
                               <button
                                 onClick={() => handleDeleteProject(project.id)}
                                 disabled={isLoading}
-                                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-600 transition-all p-1 rounded hover:bg-red-50"
+                                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-600 transition-all p-1 rounded-lg hover:bg-red-50"
                                 title="Projeyi Sil"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -234,23 +264,36 @@ export function ProjectsDashboard({
                             )}
                           </div>
 
+                          {/* Title */}
+                          <h4 className="font-bold text-gray-900 group-hover:text-emerald-700 transition-colors text-sm">
+                            {project.title}
+                          </h4>
+
                           {/* Description */}
                           <p className="mt-2 text-xs text-gray-500 line-clamp-2 leading-relaxed">
                             {project.description || "Açıklama belirtilmemiş."}
                           </p>
 
                           {/* Progress Tracker */}
-                          <div className="mt-4 space-y-1.5">
-                            <div className="flex items-center justify-between text-xs font-medium">
-                              <span className="text-gray-500">Görev İlerlemesi</span>
+                          <div className="mt-5 space-y-2">
+                            <div className="flex items-center justify-between text-xs font-semibold">
+                              <span className="text-gray-500">Dağıtım / Kurulum İlerlemesi</span>
                               <span className="text-gray-900">{stats.completed}/{stats.total} (%{stats.percent})</span>
                             </div>
                             <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
                               <div
-                                className="h-full rounded-full bg-tider-green transition-all duration-500"
+                                className={`h-full rounded-full transition-all duration-500 ${barColor}`}
                                 style={{ width: `${stats.percent}%` }}
                               />
                             </div>
+                          </div>
+
+                          {/* Mock Team Avatars */}
+                          <div className="flex -space-x-1.5 overflow-hidden mt-4 mb-2">
+                            <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-emerald-500 text-[9px] font-bold text-white flex items-center justify-center uppercase">dn</div>
+                            <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-amber-500 text-[9px] font-bold text-white flex items-center justify-center uppercase">as</div>
+                            <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-blue-500 text-[9px] font-bold text-white flex items-center justify-center uppercase">mk</div>
+                            <span className="text-[10px] text-gray-400 font-semibold self-center ml-2.5">+3 kişi</span>
                           </div>
                         </div>
 

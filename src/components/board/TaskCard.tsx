@@ -62,10 +62,10 @@ export function TaskCard({
       {...(canDrag ? { ...listeners, ...attributes } : {})}
       onClick={() => onView?.(task)}
       className={cn(
-        "group relative rounded-xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-200",
-        "hover:shadow-lg hover:border-tider-green/30 hover:-translate-y-0.5",
+        "group relative rounded-2xl border border-gray-200/60 bg-white p-4.5 shadow-sm transition-all duration-300",
+        "hover:shadow-md hover:border-emerald-600/20 hover:-translate-y-0.5",
         "animate-in fade-in slide-in-from-bottom-2 duration-300",
-        isDragging && "opacity-60 shadow-xl rotate-1 scale-105 z-50",
+        isDragging && "opacity-60 shadow-xl rotate-1 scale-[1.02] z-50",
         canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
       )}
     >

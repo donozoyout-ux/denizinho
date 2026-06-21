@@ -25,6 +25,25 @@ export async function POST(request: Request) {
   const emailBody = body.body || body.text || body.content || body.message || null;
   const senderEmail = body.sender_email || body.from || body.sender || null;
 
+  // System email loop protection
+  const systemUserEmail = process.env.SMTP_USER || "";
+  const isSystemEmail = senderEmail && senderEmail.toLowerCase() === systemUserEmail.toLowerCase();
+  const isSystemSubject = subject && (
+    subject.toLowerCase().includes("yeni görev atandı") ||
+    subject.toLowerCase().includes("görev atandı") ||
+    subject.toLowerCase().includes("ekipplan") ||
+    subject.toLowerCase().includes("sistem bildirimi") ||
+    subject.toLowerCase().includes("aidflow")
+  );
+
+  if (isSystemEmail || isSystemSubject) {
+    return NextResponse.json({
+      success: true,
+      mode: "skipped",
+      reason: "System notifications or system sender ignored to prevent loops"
+    });
+  }
+
   let tasks = body.tasks ? unwrapN8nResponse(body.tasks) : [];
   if (tasks.length === 0 && emailBody) {
     tasks = parseTasksFromText(emailBody);

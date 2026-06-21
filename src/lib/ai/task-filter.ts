@@ -68,8 +68,39 @@ ${body.slice(0, 3000)}`;
 
 /** Gemini API yoksa veya hata verirse eski keyword filtresi */
 function fallbackKeywordFilter(subject: string, body: string): AiTaskResult {
-  const keywords = ["görev", "task", "assign", "yap", "tamamla", "todo", "acil", "talep", "istek"];
-  const text = `${subject} ${body}`.toLowerCase();
+  const subjectLower = subject.toLowerCase();
+  const bodyLower = body.toLowerCase();
+  const text = `${subjectLower} ${bodyLower}`;
+
+  // Exclude system notifications and automatic messages
+  const exclusions = [
+    "yeni görev atandı", 
+    "görev atandı", 
+    "sistem bildirimi", 
+    "ekipplan", 
+    "aidflow",
+    "noreply", 
+    "no-reply",
+    "automatic message", 
+    "otomatik mesaj"
+  ];
+  const isExcluded = exclusions.some((ex) => text.includes(ex));
+  if (isExcluded) {
+    return {
+      isTask: false,
+      title: null,
+      description: null,
+      assigneeEmail: null,
+    };
+  }
+
+  // Refined task identifiers
+  const keywords = [
+    "yap", "tamamla", "görev", "task", "hazırla", "kontrol", 
+    "talep", "istek", "proje", "revize", "düzelt", "lütfen", 
+    "ekle", "sil", "güncelle", "yükle", "teslim", "planla",
+    "todo", "acil", "gönder", "ilet", "yardım"
+  ];
   const isTask = keywords.some((kw) => text.includes(kw));
   return {
     isTask,

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 import { APP_NAME } from "@/lib/config";
@@ -39,9 +40,9 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <Sidebar user={user} />
-      <main className="ml-[var(--sidebar-width)] min-h-screen flex flex-col">
+      <main className="md:ml-[var(--sidebar-width)] min-h-screen flex flex-col pb-16 md:pb-0">
         {/* Global Top Navbar */}
-        <header className="flex h-16 items-center justify-between border-b border-gray-100 bg-white px-8">
+        <header className="flex h-14 md:h-16 items-center justify-between border-b border-gray-100 bg-white px-4 md:px-8 sticky top-0 z-30 shadow-sm">
           <div className="text-sm font-semibold text-gray-700">
             {user.group_id ? `${APP_NAME} Çalışma Alanı` : "Grup Oluşturun veya Davet Kabul Edin"}
           </div>
@@ -51,10 +52,11 @@ export default async function DashboardLayout({
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 p-8">
+        <div className="flex-1 p-4 md:p-8">
           {children}
         </div>
       </main>
+      <BottomNav />
     </div>
   );
 }

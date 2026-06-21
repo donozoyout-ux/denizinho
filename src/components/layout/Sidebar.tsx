@@ -11,6 +11,7 @@ import {
   Leaf,
   PlusCircle,
   ChevronRight,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isGroupAdmin } from "@/lib/auth-client";
@@ -44,12 +45,13 @@ export function Sidebar({ user }: SidebarProps) {
         { href: "/board", label: "Görev Panosu", icon: Kanban },
         { href: "/projects", label: "Projeler", icon: Folder },
         { href: "/team", label: "Ekip Yönetimi", icon: Users },
+        { href: "/reports", label: "Raporlar", icon: BarChart3 },
       ]
     : [{ href: "/group-setup", label: "Grup Oluştur", icon: PlusCircle }];
 
   return (
     <>
-      <aside className="fixed left-0 top-0 z-40 flex h-screen w-[var(--sidebar-width)] flex-col border-r border-gray-200 bg-gradient-to-b from-white to-slate-50">
+      <aside className="fixed left-0 top-0 z-40 hidden md:flex h-screen w-[var(--sidebar-width)] flex-col border-r border-gray-200 bg-gradient-to-b from-white to-slate-50">
         <div className="flex items-center gap-3 border-b border-gray-100 px-6 py-5">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-tider-green to-emerald-600 shadow-md shadow-green-200/50">
             <Leaf className="h-5 w-5 text-white" />

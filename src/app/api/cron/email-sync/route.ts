@@ -133,6 +133,21 @@ async function handleSync(request: Request) {
           continue;
         }
 
+        // System email loop protection
+        const isSystemEmail = senderEmail.toLowerCase() === user.toLowerCase();
+        const isSystemSubject =
+          subject.toLowerCase().includes("yeni görev atandı") ||
+          subject.toLowerCase().includes("görev atandı") ||
+          subject.toLowerCase().includes("ekipplan") ||
+          subject.toLowerCase().includes("sistem bildirimi") ||
+          subject.toLowerCase().includes("aidflow");
+
+        if (isSystemEmail || isSystemSubject) {
+          console.log(`[Email Sync] Skipping system/notification email: "${subject}" from "${senderEmail}"`);
+          await client.messageFlagsAdd([msg.uid], ["\\Seen"], { uid: true });
+          continue;
+        }
+
         // AI ile e-postayı analiz et
         const aiResult = await analyzeEmailWithAI(subject, emailBody);
 
