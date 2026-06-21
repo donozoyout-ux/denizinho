@@ -186,7 +186,7 @@ export function TaskCard({
         {/* Due Date with Calendar icon */}
         {task.due_date ? (
           <span className="flex items-center gap-1 font-bold text-slate-400 shrink-0">
-            <Calendar className="h-3.5 w-3.5 text-slate-350" />
+            <Calendar className="h-3.5 w-3.5 text-slate-400" />
             {new Date(task.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
           </span>
         ) : (

@@ -101,7 +101,7 @@ export default async function DashboardPage() {
       </div>
 
       {queryError && (
-        <div className="mb-6 rounded-xl border border-amber-250 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
           Veriler yüklenirken bir hata oluştu: {queryError}
         </div>
       )}
@@ -165,7 +165,7 @@ export default async function DashboardPage() {
                     />
                     {/* Coordinators Bar */}
                     <div 
-                      className="w-2.5 rounded-t bg-slate-200 transition-all duration-300 hover:bg-slate-350"
+                      className="w-2.5 rounded-t bg-slate-200 transition-all duration-300 hover:bg-slate-300"
                       style={{ height: `${coordHeight}%` }}
                       title={`Coordinators: ${item.coordinators}`}
                     />

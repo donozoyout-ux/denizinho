@@ -196,7 +196,7 @@ export function ProjectsDashboard({
         ? "border-l-blue-500 border-l-4" 
         : project.status === "in_progress" 
           ? "border-l-emerald-500 border-l-4" 
-          : "border-l-slate-350 border-l-4",
+          : "border-l-slate-300 border-l-4",
       progressLabel: "Progress Rate",
       percent: statsPercent,
       metaText: project.status === "done" ? "Finished" : "Active",

@@ -57,7 +57,7 @@ export function HeaderNavbar({ user }: HeaderNavbarProps) {
         <div className="relative">
           <button
             onClick={handleDropdownToggle}
-            className="flex items-center gap-2 rounded-full p-1 border border-slate-150 hover:border-slate-300/50 bg-white shadow-sm cursor-pointer transition duration-300"
+            className="flex items-center gap-2 rounded-full p-1 border border-slate-200 hover:border-slate-300/50 bg-white shadow-sm cursor-pointer transition duration-300"
           >
             {/* Mock User Avatar Image from screenshots */}
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-800 to-emerald-950 text-xs font-bold text-white uppercase shadow-sm">
@@ -78,7 +78,7 @@ export function HeaderNavbar({ user }: HeaderNavbarProps) {
                 onClick={() => setShowDropdown(false)} 
               />
               <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-slate-200/60 bg-white py-1.5 shadow-xl z-50 animate-in fade-in slide-in-from-top-1 duration-150 text-xs text-slate-700">
-                <div className="px-4 py-2 border-b border-slate-150 font-bold text-slate-800">
+                <div className="px-4 py-2 border-b border-slate-200 font-bold text-slate-800">
                   <span className="block truncate">{user.full_name || "Kullanıcı"}</span>
                   <span className="block text-[10px] text-slate-400 font-medium truncate">{user.email}</span>
                 </div>

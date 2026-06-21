@@ -65,7 +65,7 @@ export function KanbanColumn({
       <div className="flex items-center justify-between px-4 py-3.5">
         <div className="flex items-center gap-2">
           <span className={cn("h-2.5 w-2.5 rounded-full shrink-0", 
-            status === "todo" && "bg-slate-450",
+            status === "todo" && "bg-slate-400",
             status === "in_progress" && "bg-amber-500",
             status === "done" && "bg-emerald-600"
           )} />

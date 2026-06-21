@@ -3,4 +3,4 @@ export const APP_NAME =
 
 export const APP_TAGLINE =
   process.env.NEXT_PUBLIC_APP_TAGLINE ||
-  "Global Response";
+  "Charity Management";

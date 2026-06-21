@@ -146,7 +146,7 @@ export function RecentTasksList({ tasks, totalCount }: RecentTasksListProps) {
           })}
         </div>
         {showMoreLink && (
-          <div className="border-t border-slate-150 bg-slate-50/30 p-3.5 text-center">
+          <div className="border-t border-slate-200 bg-slate-50/30 p-3.5 text-center">
             <Link
               href="/board"
               className="text-xs font-bold text-emerald-800 hover:underline"
