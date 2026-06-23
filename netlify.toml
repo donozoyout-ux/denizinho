@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "node -r ./scripts/patch-symlink.js ./node_modules/.bin/next build"
 
 
 [build.environment]
@@ -12,6 +12,8 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+  [plugins.inputs]
+    symlink = false
 
 [functions]
   directory = "netlify/functions"

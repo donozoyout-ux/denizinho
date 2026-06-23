@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "next build && netlify deploy --prod --dir=.next --no-build"
+    "deploy": "node -r ./scripts/patch-symlink.js node_modules/next/dist/bin/next build && netlify deploy --prod"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
