@@ -10,10 +10,6 @@
   NEXT_PUBLIC_APP_URL = "https://gordagit.netlify.app"
   NEXT_PUBLIC_SITE_URL = "https://gordagit.netlify.app"
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
-  [plugins.inputs]
-    symlink = false
 
 [functions]
   directory = "netlify/functions"
