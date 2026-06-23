@@ -9,11 +9,11 @@ export function BottomNav() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/board", label: "Tasks", icon: Kanban },
-    { href: "/projects", label: "Projects", icon: Folder },
-    { href: "/donors", label: "Donors", icon: HeartHandshake },
-    { href: "/team", label: "Team", icon: Users },
+    { href: "/dashboard", label: "Panel", icon: LayoutDashboard },
+    { href: "/board", label: "Görevler", icon: Kanban },
+    { href: "/projects", label: "Projeler", icon: Folder },
+    { href: "/donors", label: "Bağışçılar", icon: HeartHandshake },
+    { href: "/team", label: "Ekip", icon: Users },
   ];
 
   return (

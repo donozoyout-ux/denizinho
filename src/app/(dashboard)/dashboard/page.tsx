@@ -74,10 +74,10 @@ export default async function DashboardPage() {
 
   // Mock task status percentages matching the screenshot (Completed 55%, In Progress 30%, Pending 15%)
   const taskDistribution = [
-    { name: "Sarah K.", volunteers: 30, staff: 23, coordinators: 6 },
-    { name: "David L.", volunteers: 44, staff: 39, coordinators: 14 },
-    { name: "Maria R.", volunteers: 29, staff: 23, coordinators: 7 },
-    { name: "Alex T.", volunteers: 36, staff: 20, coordinators: 6 },
+    { name: "Ayşe K.", volunteers: 30, staff: 23, coordinators: 6 },
+    { name: "Mehmet L.", volunteers: 44, staff: 39, coordinators: 14 },
+    { name: "Zeynep R.", volunteers: 29, staff: 23, coordinators: 7 },
+    { name: "Ali T.", volunteers: 36, staff: 20, coordinators: 6 },
   ];
 
   return (
@@ -85,8 +85,8 @@ export default async function DashboardPage() {
       {/* Top Header Actions matching screenshot */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5">
         <div>
-          <h2 className="text-2xl font-black text-slate-800 tracking-tight">Charity Management</h2>
-          <p className="text-xs font-semibold text-slate-400 mt-1 uppercase tracking-wider">Overview of current team tasks and status.</p>
+          <h2 className="text-2xl font-black text-slate-800 tracking-tight">Ekip ve Görev Yönetimi</h2>
+          <p className="text-xs font-semibold text-slate-400 mt-1 uppercase tracking-wider">Mevcut ekip görevleri ve durumuna genel bakış.</p>
         </div>
         <div className="flex items-center gap-3">
           <button className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-600 shadow-sm hover:bg-slate-50 transition">
@@ -95,7 +95,7 @@ export default async function DashboardPage() {
           </button>
           <button className="inline-flex items-center gap-2 rounded-xl bg-emerald-800 hover:bg-emerald-950 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition">
             <FileSpreadsheet className="h-4 w-4" />
-            Export Report
+            Rapor İndir
           </button>
         </div>
       </div>
@@ -121,21 +121,21 @@ export default async function DashboardPage() {
         <div className="rounded-2xl border border-slate-200/60 bg-white p-6 shadow-sm lg:col-span-2">
           <div className="flex items-center justify-between border-b border-slate-50 pb-4">
             <div>
-              <h3 className="text-sm font-bold text-slate-800">Team Task Distribution</h3>
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mt-0.5">Most active team members</p>
+              <h3 className="text-sm font-bold text-slate-800">Ekip Görev Dağılımı</h3>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mt-0.5">En aktif ekip üyeleri</p>
             </div>
             <div className="flex items-center gap-3 text-[10px] font-bold">
               <span className="flex items-center gap-1.5 text-slate-500">
                 <span className="h-2.5 w-2.5 rounded bg-emerald-800" />
-                Volunteers
+                Gönüllüler
               </span>
               <span className="flex items-center gap-1.5 text-slate-500">
                 <span className="h-2.5 w-2.5 rounded bg-emerald-500/60" />
-                Staff
+                Personel
               </span>
               <span className="flex items-center gap-1.5 text-slate-500">
                 <span className="h-2.5 w-2.5 rounded bg-slate-200" />
-                Coordinators
+                Koordinatörler
               </span>
             </div>
           </div>
@@ -180,8 +180,8 @@ export default async function DashboardPage() {
         {/* Right Column: Task Status Overview Donut Chart */}
         <div className="rounded-2xl border border-slate-200/60 bg-white p-6 shadow-sm">
           <div className="border-b border-slate-50 pb-4">
-            <h3 className="text-sm font-bold text-slate-800">Task Status Overview</h3>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mt-0.5">Tasks status breakdown</p>
+            <h3 className="text-sm font-bold text-slate-800">Görev Durumu Özeti</h3>
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mt-0.5">Görev durumu dağılımı</p>
           </div>
 
           <div className="mt-6 flex flex-col items-center justify-center">
@@ -205,7 +205,7 @@ export default async function DashboardPage() {
               </svg>
               <div className="absolute flex flex-col items-center justify-center text-center">
                 <span className="text-2xl font-extrabold text-slate-800">55%</span>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Completed</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Tamamlandı</span>
               </div>
             </div>
 
@@ -214,7 +214,7 @@ export default async function DashboardPage() {
               <div className="flex items-center justify-between text-xs font-semibold">
                 <span className="flex items-center gap-2 text-slate-500">
                   <span className="h-2.5 w-2.5 rounded-full bg-[#064e3b]" />
-                  Completed
+                  Tamamlanan
                 </span>
                 <span className="text-slate-800 font-bold">55%</span>
               </div>
@@ -222,7 +222,7 @@ export default async function DashboardPage() {
               <div className="flex items-center justify-between text-xs font-semibold">
                 <span className="flex items-center gap-2 text-slate-500">
                   <span className="h-2.5 w-2.5 rounded-full bg-[#6ee7b7]" />
-                  In Progress
+                  Devam Eden
                 </span>
                 <span className="text-slate-800 font-bold">30%</span>
               </div>
@@ -230,7 +230,7 @@ export default async function DashboardPage() {
               <div className="flex items-center justify-between text-xs font-semibold">
                 <span className="flex items-center gap-2 text-slate-500">
                   <span className="h-2.5 w-2.5 rounded-full bg-[#cbd5e1]" />
-                  Pending
+                  Bekleyen
                 </span>
                 <span className="text-slate-800 font-bold">15%</span>
               </div>
@@ -244,8 +244,8 @@ export default async function DashboardPage() {
         {/* Recent Tasks */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-base font-extrabold text-slate-800 tracking-tight">Recent Tasks</h3>
-            <Link href="/board" className="text-xs font-bold text-emerald-800 hover:underline">View All</Link>
+            <h3 className="text-base font-extrabold text-slate-800 tracking-tight">Son Görevler</h3>
+            <Link href="/board" className="text-xs font-bold text-emerald-800 hover:underline">Tümünü Gör</Link>
           </div>
           <RecentTasksList tasks={recentTasks} totalCount={totalTasks} />
         </section>

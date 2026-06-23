@@ -5,8 +5,8 @@
 [build.environment]
   NODE_VERSION = "22"
   NPM_FLAGS = "--legacy-peer-deps"
-  NEXT_PUBLIC_APP_NAME = "AidFlow"
-  NEXT_PUBLIC_APP_TAGLINE = "Global Response"
+  NEXT_PUBLIC_APP_NAME = "EkipPlan"
+  NEXT_PUBLIC_APP_TAGLINE = "Ekip ve Görev Yönetimi"
   NEXT_PUBLIC_APP_URL = "https://golden-fairy-84ec12.netlify.app"
   NEXT_PUBLIC_SITE_URL = "https://golden-fairy-84ec12.netlify.app"
 

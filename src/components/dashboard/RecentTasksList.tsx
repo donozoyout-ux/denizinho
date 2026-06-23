@@ -88,9 +88,9 @@ export function RecentTasksList({ tasks, totalCount }: RecentTasksListProps) {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case "done": return "Completed";
-      case "in_progress": return "In Progress";
-      default: return "Todo";
+      case "done": return "Tamamlandı";
+      case "in_progress": return "Devam Ediyor";
+      default: return "Yapılacak";
     }
   };
 
@@ -115,7 +115,7 @@ export function RecentTasksList({ tasks, totalCount }: RecentTasksListProps) {
                       {task.title}
                     </p>
                     <p className="text-xs text-slate-400 font-semibold mt-0.5">
-                      Due {formattedDate} • Assignee: {assigneeName}
+                      Son Tarih: {formattedDate} • Sorumlu: {assigneeName}
                     </p>
                   </div>
                 </div>
@@ -151,7 +151,7 @@ export function RecentTasksList({ tasks, totalCount }: RecentTasksListProps) {
               href="/board"
               className="text-xs font-bold text-emerald-800 hover:underline"
             >
-              View All Tasks ({totalCount ?? tasks.length})
+              Tüm Görevleri Gör ({totalCount ?? tasks.length})
             </Link>
           </div>
         )}

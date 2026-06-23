@@ -38,7 +38,7 @@ export function HeaderNavbar({ user }: HeaderNavbarProps) {
             <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
             <input
               type="text"
-              placeholder="Search projects, tasks, or team members..."
+              placeholder="Proje, görev veya ekip üyesi ara..."
               className="w-full rounded-full border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-2 text-xs focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 transition-all duration-300"
             />
           </div>

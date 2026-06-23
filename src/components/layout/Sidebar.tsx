@@ -45,12 +45,12 @@ export function Sidebar({ user }: SidebarProps) {
 
   const navItems = user.group_id
     ? [
-        { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-        { href: "/board", label: "Tasks", icon: Kanban },
-        { href: "/projects", label: "Projects", icon: Folder },
-        { href: "/team", label: "Team", icon: Users },
-        { href: "/donors", label: "Donors", icon: HeartHandshake },
-        { href: "/reports", label: "Reports", icon: BarChart3 },
+        { href: "/dashboard", label: "Kontrol Paneli", icon: LayoutDashboard },
+        { href: "/board", label: "Görevler", icon: Kanban },
+        { href: "/projects", label: "Projeler", icon: Folder },
+        { href: "/team", label: "Ekip", icon: Users },
+        { href: "/donors", label: "Bağışçılar", icon: HeartHandshake },
+        { href: "/reports", label: "Raporlar", icon: BarChart3 },
       ]
     : [{ href: "/group-setup", label: "Grup Oluştur", icon: PlusCircle }];
 
@@ -103,7 +103,7 @@ export function Sidebar({ user }: SidebarProps) {
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 py-3 px-4 text-xs font-bold text-white shadow-sm transition-all duration-300"
             >
               <Plus className="h-4 w-4" />
-              New Project
+              Yeni Proje
             </button>
           )}
 
@@ -115,7 +115,7 @@ export function Sidebar({ user }: SidebarProps) {
               className="flex w-full items-center gap-3 rounded-xl py-2 px-4 text-left text-[13px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
             >
               <Settings className="h-4.5 w-4.5 text-slate-400" />
-              Settings
+              Ayarlar
             </button>
 
             {/* Help button */}
@@ -125,7 +125,7 @@ export function Sidebar({ user }: SidebarProps) {
               className="flex w-full items-center gap-3 rounded-xl py-2 px-4 text-left text-[13px] font-semibold text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
             >
               <HelpCircle className="h-4.5 w-4.5 text-slate-400" />
-              Help
+              Yardım
             </button>
 
             {/* Logout button */}
@@ -134,7 +134,7 @@ export function Sidebar({ user }: SidebarProps) {
               className="flex w-full items-center gap-3 rounded-xl py-2 px-4 text-left text-[13px] font-semibold text-red-500 hover:bg-red-50 transition-colors"
             >
               <LogOut className="h-4.5 w-4.5 text-red-400" />
-              Logout
+              Çıkış Yap
             </button>
           </div>
         </div>

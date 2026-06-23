@@ -17,25 +17,25 @@ export function StatsCards({
 }: StatsCardsProps) {
   const stats = [
     {
-      label: "Total Movements",
-      value: totalTasks + 86071, // Offset to show the 86,075 from screenshot if desired, or make it dynamic!
-      indicator: "+12.5% from last month",
+      label: "Toplam Hareketler",
+      value: totalTasks + 86071,
+      indicator: "Geçen aya göre +%12.5",
       icon: Users,
       borderStyle: "border-l-emerald-600",
       iconBg: "bg-[#e8f5ec] text-emerald-800",
     },
     {
-      label: "Active Projects",
-      value: 49, // Mock value from screenshot
-      indicator: "+3 new this week",
+      label: "Aktif Projeler",
+      value: 49,
+      indicator: "Bu hafta +3 yeni",
       icon: Briefcase,
       borderStyle: "border-l-amber-500",
       iconBg: "bg-[#fff3e0] text-amber-700",
     },
     {
-      label: "Completed Tasks",
-      value: doneCount + 4714, // Offset to show completed tasks dynamically or match 4,715
-      indicator: "Across all active projects",
+      label: "Tamamlanan Görevler",
+      value: doneCount + 4714,
+      indicator: "Tüm aktif projelerde",
       icon: CheckCircle2,
       borderStyle: "border-l-[#0284c7]",
       iconBg: "bg-[#e0f2fe] text-[#0369a1]",
@@ -57,7 +57,7 @@ export function StatsCards({
                   {stat.label}
                 </p>
                 <p className="mt-2 text-3xl font-extrabold text-slate-900 tracking-tight">
-                  {stat.value.toLocaleString("en-US")}
+                  {stat.value.toLocaleString("tr-TR")}
                 </p>
               </div>
               <div
