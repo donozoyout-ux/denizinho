@@ -7,8 +7,8 @@
   NPM_FLAGS = "--legacy-peer-deps"
   NEXT_PUBLIC_APP_NAME = "AidFlow"
   NEXT_PUBLIC_APP_TAGLINE = "Global Response"
-  NEXT_PUBLIC_APP_URL = "https://gordagit.netlify.app"
-  NEXT_PUBLIC_SITE_URL = "https://gordagit.netlify.app"
+  NEXT_PUBLIC_APP_URL = "https://golden-fairy-84ec12.netlify.app"
+  NEXT_PUBLIC_SITE_URL = "https://golden-fairy-84ec12.netlify.app"
 
 
 [functions]
