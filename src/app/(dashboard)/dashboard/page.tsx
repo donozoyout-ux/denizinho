@@ -3,12 +3,11 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
-import { Header } from "@/components/layout/Header";
 import { StatsCards } from "@/components/dashboard/StatsCards";
 import { IncomingRequestsList } from "@/components/dashboard/IncomingRequestsList";
 import { RecentTasksList } from "@/components/dashboard/RecentTasksList";
 import type { IncomingRequest, Task } from "@/types/database";
-import { ChevronDown, FileSpreadsheet, BarChart2 } from "lucide-react";
+import { ChevronDown, FileSpreadsheet } from "lucide-react";
 
 export const revalidate = 30;
 
@@ -24,6 +23,7 @@ export default async function DashboardPage() {
   }
 
   const supabase = await createClient();
+  const groupId = user.group_id;
 
   const taskSelect =
     "id, title, description, status, due_date, assigned_to, created_at, created_by, updated_at, assignee:users!tasks_assigned_to_fkey(id, email, full_name, role)";
@@ -35,31 +35,52 @@ export default async function DashboardPage() {
     inProgressRes,
     doneRes,
     requestsRes,
+    activeProjectsRes,
+    teamMembersRes,
+    allTasksForChartRes,
   ] = await Promise.all([
     supabase
       .from("tasks")
       .select(taskSelect)
+      .eq("group_id", groupId)
       .order("created_at", { ascending: false })
       .limit(5),
-    supabase.from("tasks").select("*", { count: "exact", head: true }),
+    supabase.from("tasks").select("*", { count: "exact", head: true }).eq("group_id", groupId),
     supabase
       .from("tasks")
       .select("*", { count: "exact", head: true })
+      .eq("group_id", groupId)
       .eq("status", "todo"),
     supabase
       .from("tasks")
       .select("*", { count: "exact", head: true })
+      .eq("group_id", groupId)
       .eq("status", "in_progress"),
     supabase
       .from("tasks")
       .select("*", { count: "exact", head: true })
+      .eq("group_id", groupId)
       .eq("status", "done"),
     supabase
       .from("incoming_requests")
       .select("*", { count: "exact" })
+      .eq("group_id", groupId)
       .eq("status", "pending")
       .order("created_at", { ascending: false })
       .limit(10),
+    supabase
+      .from("projects")
+      .select("*", { count: "exact", head: true })
+      .eq("group_id", groupId)
+      .eq("status", "in_progress"),
+    supabase
+      .from("users")
+      .select("id, full_name, email")
+      .eq("group_id", groupId),
+    supabase
+      .from("tasks")
+      .select("assigned_to, status")
+      .eq("group_id", groupId),
   ]);
 
   const queryError =
@@ -69,16 +90,41 @@ export default async function DashboardPage() {
 
   const recentTasks = (recentTasksRes.data as unknown as Task[]) ?? [];
   const totalTasks = totalTasksRes.count ?? 0;
+  const todoCount = todoRes.count ?? 0;
+  const inProgressCount = inProgressRes.count ?? 0;
+  const doneCount = doneRes.count ?? 0;
   const incomingRequests = (requestsRes.data as IncomingRequest[]) ?? [];
   const pendingRequests = requestsRes.count ?? 0;
+  const activeProjectsCount = activeProjectsRes.count ?? 0;
 
-  // Mock task status percentages matching the screenshot (Completed 55%, In Progress 30%, Pending 15%)
-  const taskDistribution = [
-    { name: "Ayşe K.", volunteers: 30, staff: 23, coordinators: 6 },
-    { name: "Mehmet L.", volunteers: 44, staff: 39, coordinators: 14 },
-    { name: "Zeynep R.", volunteers: 29, staff: 23, coordinators: 7 },
-    { name: "Ali T.", volunteers: 36, staff: 20, coordinators: 6 },
-  ];
+  // Build real team task distribution from DB
+  const teamMembers = teamMembersRes.data ?? [];
+  const allTasks = allTasksForChartRes.data ?? [];
+
+  const taskDistribution = teamMembers
+    .map((member) => {
+      const memberTasks = allTasks.filter((t) => t.assigned_to === member.id);
+      const todoTasks = memberTasks.filter((t) => t.status === "todo").length;
+      const inProgressTasks = memberTasks.filter((t) => t.status === "in_progress").length;
+      const doneTasks = memberTasks.filter((t) => t.status === "done").length;
+      const total = todoTasks + inProgressTasks + doneTasks;
+      return {
+        name: member.full_name || member.email?.split("@")[0] || "?",
+        todo: todoTasks,
+        inProgress: inProgressTasks,
+        done: doneTasks,
+        total,
+      };
+    })
+    .filter((m) => m.total > 0)
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 8);
+
+  // Real donut chart percentages
+  const totalForDonut = todoCount + inProgressCount + doneCount;
+  const donePercent = totalForDonut > 0 ? Math.round((doneCount / totalForDonut) * 100) : 0;
+  const inProgressPercent = totalForDonut > 0 ? Math.round((inProgressCount / totalForDonut) * 100) : 0;
+  const todoPercent = totalForDonut > 0 ? 100 - donePercent - inProgressPercent : 0;
 
   return (
     <div className="space-y-8 pb-12 animate-in fade-in duration-300">
@@ -109,13 +155,14 @@ export default async function DashboardPage() {
       {/* Main KPI Stats Cards */}
       <StatsCards
         totalTasks={totalTasks}
-        todoCount={todoRes.count ?? 0}
-        inProgressCount={inProgressRes.count ?? 0}
-        doneCount={doneRes.count ?? 0}
+        todoCount={todoCount}
+        inProgressCount={inProgressCount}
+        doneCount={doneCount}
         pendingRequests={pendingRequests}
+        activeProjectsCount={activeProjectsCount}
       />
 
-      {/* Grid of charts matching screenshot 1 */}
+      {/* Grid of charts */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Column: Team Task Distribution Bar Chart */}
         <div className="rounded-2xl border border-slate-200/60 bg-white p-6 shadow-sm lg:col-span-2">
@@ -127,54 +174,65 @@ export default async function DashboardPage() {
             <div className="flex items-center gap-3 text-[10px] font-bold">
               <span className="flex items-center gap-1.5 text-slate-500">
                 <span className="h-2.5 w-2.5 rounded bg-emerald-800" />
-                Gönüllüler
+                Tamamlanan
               </span>
               <span className="flex items-center gap-1.5 text-slate-500">
                 <span className="h-2.5 w-2.5 rounded bg-emerald-500/60" />
-                Personel
+                Devam Eden
               </span>
               <span className="flex items-center gap-1.5 text-slate-500">
                 <span className="h-2.5 w-2.5 rounded bg-slate-200" />
-                Koordinatörler
+                Bekleyen
               </span>
             </div>
           </div>
           
           {/* Custom SVG Grouped Bar Chart */}
-          <div className="mt-6 flex h-64 items-end justify-between gap-6 px-2">
-            {taskDistribution.map((item, idx) => {
-              const maxVal = 50;
-              const volHeight = (item.volunteers / maxVal) * 100;
-              const staffHeight = (item.staff / maxVal) * 100;
-              const coordHeight = (item.coordinators / maxVal) * 100;
+          {taskDistribution.length === 0 ? (
+            <div className="mt-6 flex h-64 items-center justify-center text-sm text-slate-400 font-semibold">
+              Henüz ekip üyelerine atanmış görev bulunmuyor.
+            </div>
+          ) : (
+            <div className="mt-6 flex h-64 items-end justify-between gap-6 px-2">
+              {taskDistribution.map((item, idx) => {
+                const maxVal = Math.max(...taskDistribution.map(d => Math.max(d.done, d.inProgress, d.todo)), 1);
+                const doneHeight = (item.done / maxVal) * 100;
+                const inProgressHeight = (item.inProgress / maxVal) * 100;
+                const todoHeight = (item.todo / maxVal) * 100;
 
-              return (
-                <div key={idx} className="group flex flex-1 flex-col items-center gap-2 h-full justify-end">
-                  <div className="relative w-full flex items-end justify-center gap-1 h-full pb-2 border-b border-slate-100">
-                    {/* Volunteers Bar */}
-                    <div 
-                      className="w-2.5 rounded-t bg-emerald-800 transition-all duration-300 hover:bg-emerald-950"
-                      style={{ height: `${volHeight}%` }}
-                      title={`Volunteers: ${item.volunteers}`}
-                    />
-                    {/* Staff Bar */}
-                    <div 
-                      className="w-2.5 rounded-t bg-emerald-500/60 transition-all duration-300 hover:bg-emerald-500"
-                      style={{ height: `${staffHeight}%` }}
-                      title={`Staff: ${item.staff}`}
-                    />
-                    {/* Coordinators Bar */}
-                    <div 
-                      className="w-2.5 rounded-t bg-slate-200 transition-all duration-300 hover:bg-slate-300"
-                      style={{ height: `${coordHeight}%` }}
-                      title={`Coordinators: ${item.coordinators}`}
-                    />
+                // Truncate name for display
+                const displayName = item.name.length > 12 
+                  ? item.name.substring(0, 10) + "…" 
+                  : item.name;
+
+                return (
+                  <div key={idx} className="group flex flex-1 flex-col items-center gap-2 h-full justify-end">
+                    <div className="relative w-full flex items-end justify-center gap-1 h-full pb-2 border-b border-slate-100">
+                      {/* Done Bar */}
+                      <div 
+                        className="w-2.5 rounded-t bg-emerald-800 transition-all duration-300 hover:bg-emerald-950"
+                        style={{ height: `${doneHeight}%`, minHeight: item.done > 0 ? '4px' : '0' }}
+                        title={`Tamamlanan: ${item.done}`}
+                      />
+                      {/* In Progress Bar */}
+                      <div 
+                        className="w-2.5 rounded-t bg-emerald-500/60 transition-all duration-300 hover:bg-emerald-500"
+                        style={{ height: `${inProgressHeight}%`, minHeight: item.inProgress > 0 ? '4px' : '0' }}
+                        title={`Devam Eden: ${item.inProgress}`}
+                      />
+                      {/* Todo Bar */}
+                      <div 
+                        className="w-2.5 rounded-t bg-slate-200 transition-all duration-300 hover:bg-slate-300"
+                        style={{ height: `${todoHeight}%`, minHeight: item.todo > 0 ? '4px' : '0' }}
+                        title={`Bekleyen: ${item.todo}`}
+                      />
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-500 truncate max-w-full" title={item.name}>{displayName}</span>
                   </div>
-                  <span className="text-[10px] font-bold text-slate-500">{item.name}</span>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Right Column: Task Status Overview Donut Chart */}
@@ -191,20 +249,20 @@ export default async function DashboardPage() {
                 {/* Background track */}
                 <circle cx="18" cy="18" r="15.915" fill="none" stroke="#f1f5f9" strokeWidth="3" />
                 
-                {/* 55% Segment (Completed) */}
+                {/* Done Segment */}
                 <circle cx="18" cy="18" r="15.915" fill="none" stroke="#064e3b" strokeWidth="3" 
-                  strokeDasharray="55 100" strokeDashoffset="0" />
+                  strokeDasharray={`${donePercent} ${100 - donePercent}`} strokeDashoffset="0" />
                 
-                {/* 30% Segment (In Progress) */}
+                {/* In Progress Segment */}
                 <circle cx="18" cy="18" r="15.915" fill="none" stroke="#6ee7b7" strokeWidth="3" 
-                  strokeDasharray="30 100" strokeDashoffset="-55" />
+                  strokeDasharray={`${inProgressPercent} ${100 - inProgressPercent}`} strokeDashoffset={`${-donePercent}`} />
 
-                {/* 15% Segment (Pending) */}
+                {/* Todo Segment */}
                 <circle cx="18" cy="18" r="15.915" fill="none" stroke="#cbd5e1" strokeWidth="3" 
-                  strokeDasharray="15 100" strokeDashoffset="-85" />
+                  strokeDasharray={`${todoPercent} ${100 - todoPercent}`} strokeDashoffset={`${-(donePercent + inProgressPercent)}`} />
               </svg>
               <div className="absolute flex flex-col items-center justify-center text-center">
-                <span className="text-2xl font-extrabold text-slate-800">55%</span>
+                <span className="text-2xl font-extrabold text-slate-800">{donePercent}%</span>
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Tamamlandı</span>
               </div>
             </div>
@@ -216,7 +274,7 @@ export default async function DashboardPage() {
                   <span className="h-2.5 w-2.5 rounded-full bg-[#064e3b]" />
                   Tamamlanan
                 </span>
-                <span className="text-slate-800 font-bold">55%</span>
+                <span className="text-slate-800 font-bold">{donePercent}%</span>
               </div>
               
               <div className="flex items-center justify-between text-xs font-semibold">
@@ -224,7 +282,7 @@ export default async function DashboardPage() {
                   <span className="h-2.5 w-2.5 rounded-full bg-[#6ee7b7]" />
                   Devam Eden
                 </span>
-                <span className="text-slate-800 font-bold">30%</span>
+                <span className="text-slate-800 font-bold">{inProgressPercent}%</span>
               </div>
 
               <div className="flex items-center justify-between text-xs font-semibold">
@@ -232,7 +290,7 @@ export default async function DashboardPage() {
                   <span className="h-2.5 w-2.5 rounded-full bg-[#cbd5e1]" />
                   Bekleyen
                 </span>
-                <span className="text-slate-800 font-bold">15%</span>
+                <span className="text-slate-800 font-bold">{todoPercent}%</span>
               </div>
             </div>
           </div>

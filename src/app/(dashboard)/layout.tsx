@@ -7,7 +7,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 import { APP_NAME } from "@/lib/config";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
 export default async function DashboardLayout({
   children,

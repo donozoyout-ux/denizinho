@@ -193,11 +193,26 @@ export default function DonorsPage() {
   const totalDonorsCount = donors.length;
   const activeDonorsCount = donors.filter(d => d.status === "Aktif").length;
   
-  // Total cash donations this month (mock calculations matching standard dashboard goals)
+  // Total cash donations this month
   const totalDonationValue = donors.reduce((sum, d) => sum + d.total_donated, 0);
-  const monthlyGoal = 400000;
-  const currentMonthDonation = 342500; // Mock from screenshot
-  const monthlyProgressPercent = Math.min(100, Math.round((currentMonthDonation / monthlyGoal) * 100));
+  
+  // Calculate real donations in the last 30 days
+  const now = new Date();
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(now.getDate() - 30);
+  
+  const currentMonthDonation = donors.reduce((sum, d) => {
+    return sum + d.donations.reduce((dSum, donation) => {
+      const donDate = new Date(donation.date);
+      if (donation.type === "Para" && donDate >= thirtyDaysAgo) {
+        return dSum + donation.amount;
+      }
+      return dSum;
+    }, 0);
+  }, 0);
+
+  const monthlyGoal = Math.max(50000, Math.round(totalDonationValue * 0.2 / 10000) * 10000); // Dynamic goal based on history, min 50k
+  const monthlyProgressPercent = monthlyGoal > 0 ? Math.min(100, Math.round((currentMonthDonation / monthlyGoal) * 100)) : 0;
 
   // Get Top Supporters
   const topSupporters = [...donors]

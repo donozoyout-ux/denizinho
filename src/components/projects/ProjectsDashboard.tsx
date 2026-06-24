@@ -22,16 +22,24 @@ import {
   Users
 } from "lucide-react";
 
+interface TeamMember {
+  id: string;
+  full_name: string | null;
+  email: string;
+}
+
 interface ProjectsDashboardProps {
   initialProjects: Project[];
-  allTasks: Pick<Task, "id" | "status" | "project_id">[];
+  allTasks: Pick<Task, "id" | "status" | "project_id" | "assigned_to">[];
   user: User;
+  teamMembers?: TeamMember[];
 }
 
 export function ProjectsDashboard({
   initialProjects,
   allTasks,
   user,
+  teamMembers = [],
 }: ProjectsDashboardProps) {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>(initialProjects);
@@ -51,22 +59,30 @@ export function ProjectsDashboard({
   const isAdmin = isGroupAdmin(user);
 
   // Calculate project statistics recursively (tasks completed vs total)
-  const getProjectStats = (projectId: string) => {
-    const getProjectAndSubprojectIds = (pId: string): string[] => {
-      const ids = [pId];
-      const subs = projects.filter((p) => p.parent_id === pId);
-      for (const sub of subs) {
-        ids.push(...getProjectAndSubprojectIds(sub.id));
-      }
-      return ids;
-    };
+  const getProjectAndSubprojectIds = (pId: string): string[] => {
+    const ids = [pId];
+    const subs = projects.filter((p) => p.parent_id === pId);
+    for (const sub of subs) {
+      ids.push(...getProjectAndSubprojectIds(sub.id));
+    }
+    return ids;
+  };
 
+  const getProjectStats = (projectId: string) => {
     const targetIds = getProjectAndSubprojectIds(projectId);
     const projectTasks = allTasks.filter((t) => t.project_id && targetIds.includes(t.project_id));
     const total = projectTasks.length;
     const completed = projectTasks.filter((t) => t.status === "done").length;
     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
     return { total, completed, percent };
+  };
+
+  // Get real team members assigned to a project's tasks
+  const getProjectMembers = (projectId: string): TeamMember[] => {
+    const targetIds = getProjectAndSubprojectIds(projectId);
+    const projectTasks = allTasks.filter((t) => t.project_id && targetIds.includes(t.project_id));
+    const assignedIds = [...new Set(projectTasks.map((t) => t.assigned_to).filter(Boolean))] as string[];
+    return teamMembers.filter((m) => assignedIds.includes(m.id));
   };
 
   const openCreateModal = (parentId: string | null = null) => {
@@ -351,13 +367,40 @@ export function ProjectsDashboard({
                     </div>
                   </div>
 
-                  {/* Team Avatars mock layout */}
-                  <div className="flex -space-x-1.5 overflow-hidden mt-4.5 mb-2">
-                    <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-emerald-500 text-[8px] font-bold text-white flex items-center justify-center uppercase shadow-sm">dn</div>
-                    <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-amber-500 text-[8px] font-bold text-white flex items-center justify-center uppercase shadow-sm">as</div>
-                    <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-blue-500 text-[8px] font-bold text-white flex items-center justify-center uppercase shadow-sm">mk</div>
-                    <span className="text-[10px] text-slate-400 font-bold self-center ml-2.5">+3 kişi</span>
-                  </div>
+                  {/* Team Avatars - real members */}
+                  {(() => {
+                    const members = getProjectMembers(project.id);
+                    const avatarColors = ["bg-emerald-500", "bg-amber-500", "bg-blue-500", "bg-violet-500", "bg-rose-500"];
+                    const displayMembers = members.slice(0, 3);
+                    const remaining = members.length - 3;
+                    return (
+                      <div className="flex -space-x-1.5 overflow-hidden mt-4.5 mb-2">
+                        {displayMembers.map((m, i) => {
+                          const initials = (m.full_name || m.email)
+                            .split(" ")
+                            .map((w: string) => w.charAt(0))
+                            .join("")
+                            .substring(0, 2)
+                            .toLowerCase();
+                          return (
+                            <div
+                              key={m.id}
+                              className={`inline-block h-6 w-6 rounded-full ring-2 ring-white ${avatarColors[i % avatarColors.length]} text-[8px] font-bold text-white flex items-center justify-center uppercase shadow-sm`}
+                              title={m.full_name || m.email}
+                            >
+                              {initials}
+                            </div>
+                          );
+                        })}
+                        {remaining > 0 && (
+                          <span className="text-[10px] text-slate-400 font-bold self-center ml-2.5">+{remaining} kişi</span>
+                        )}
+                        {members.length === 0 && (
+                          <span className="text-[10px] text-slate-400 font-medium">Atanmış kişi yok</span>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <div className="border-t border-slate-100/60 pt-3 mt-4 flex items-center justify-between text-xs">

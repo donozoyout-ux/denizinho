@@ -20,6 +20,7 @@ export interface Donor {
   last_contact: string;
   total_donated: number;
   donations: Donation[];
+  group_id?: string | null;
 }
 
 const filePath = path.join(process.cwd(), "src", "data", "donors.json");
@@ -57,7 +58,7 @@ export function saveDonors(donors: Donor[]): boolean {
   }
 }
 
-export function addDonor(donorData: Omit<Donor, "id" | "total_donated" | "donations" | "last_contact"> & { donation?: Omit<Donation, "id"> }): Donor {
+export function addDonor(donorData: Omit<Donor, "id" | "total_donated" | "donations" | "last_contact"> & { donation?: Omit<Donation, "id">, group_id?: string | null }): Donor {
   const donors = getDonors();
   const newId = `donor-${Date.now()}`;
   
@@ -88,7 +89,8 @@ export function addDonor(donorData: Omit<Donor, "id" | "total_donated" | "donati
     status: donorData.status || "Aktif",
     last_contact: donorData.donation?.date || today,
     total_donated: totalDonated,
-    donations: donations
+    donations: donations,
+    group_id: donorData.group_id || null
   };
 
   donors.unshift(newDonor);

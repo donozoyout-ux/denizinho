@@ -18,24 +18,27 @@ export default async function BoardPage() {
   }
 
   const supabase = await createClient();
+  const groupId = user.group_id;
 
   const tasksQuery = supabase
     .from("tasks")
     .select(
       "*, assignee:users!tasks_assigned_to_fkey(id, email, full_name, role), creator:users!tasks_created_by_fkey(id, email, full_name)"
     )
+    .eq("group_id", groupId)
     .order("created_at", { ascending: false })
     .limit(100);
 
   const membersQuery = supabase
     .from("users")
     .select("id, email, full_name, role, group_id, created_at")
-    .eq("group_id", user.group_id)
+    .eq("group_id", groupId)
     .order("full_name");
 
   const projectsQuery = supabase
     .from("projects")
     .select("id, title, description, status, created_by, created_at, updated_at, group_id")
+    .eq("group_id", groupId)
     .order("title");
 
   const [tasksRes, teamMembersRes, projectsRes] = await Promise.all([
